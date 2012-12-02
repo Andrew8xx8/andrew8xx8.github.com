@@ -1,2 +1,47 @@
 // This File is imported last, and will override other styles in the cascade
 // Add styles here to make changes without digging in too much
+html {
+  background: #efefef image-url('bg.png') top left;
+}
+aside.sidebar section h1{
+  border-bottom: rgba(255, 255, 255, 0.6) 1px solid
+}
+aside.sidebar li {
+  border-bottom: rgba(255, 255, 255, 0.1) 1px solid;
+  box-shadow: none;
+}
+aside.sidebar a {
+  text-shadow: none;
+}
+body > header h1 {
+  background: image-url('8xx8.png') no-repeat;
+  width: 203px;
+  height: 89px;
+  margin: 0 auto;
+  display: block;
+  text-indent: -40000px;
+  font-family: arial;
+}
+body > header {
+  background: none;
+  text-align: center;
+}
+body > header h2 {
+  display:none
+}
+body > nav {
+  border-radius: 7px 7px 0 0;
+  background: rgba(200, 200, 200, 0.8);
+  border-bottom: 1px solid #aaa;
+  box-shadow: 0px 2px 13px 1px rgba(0, 0, 0, 0.3);
+}
+#main {
+  box-shadow: 0px 2px 13px 1px rgba(0, 0, 0, 0.3);
+}
+body > footer {
+  box-shadow: 0px 2px 13px 1px rgba(0, 0, 0, 0.3);
+  background: rgba(228,228,228,0.7)
+}
+aside.sidebar {
+  border-top: medium none;
+}
