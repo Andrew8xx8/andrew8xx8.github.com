@@ -42,7 +42,7 @@ categories: Linux
 Писать такую длинную команду каждый раз неудобно, поэтому лучше написать скрипт для загрузки.
 Вот мой https://gist.github.com/418330833
 
-{% img images/content/open-terminal.png [Так выглядит мой вариант] %}
+{% img /images/content/open-terminal.png [Так выглядит мой вариант] %}
 
 P.S.
 * Более подробно о доступных опциях терминала можно узнать выполнив: `gnome-terminal --help-all`
