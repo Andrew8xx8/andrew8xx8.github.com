@@ -6,6 +6,8 @@ comments: true
 categories: CS-Cart
 ---
 
+<!-- more -->
+
 ## Файлы
 
 * **block_cache_properties.php** — глобальные апдейт хендлеры для кеша блоков;
