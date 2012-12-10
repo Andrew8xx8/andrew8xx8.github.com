@@ -4,6 +4,7 @@ title: "Схема блоков в CS-Cart 3.0"
 date: 2012-04-17 10:48
 comments: true
 categories: CS-Cart
+tags: cs-cart
 ---
 
 <!-- more -->
