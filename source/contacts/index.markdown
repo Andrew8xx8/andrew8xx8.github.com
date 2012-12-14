@@ -2,9 +2,10 @@
 layout: page
 title: "Контакты"
 date: 2012-12-10 16:15
-comments: true
-sharing: true
+comments: false
+sharing: false
 footer: true
+alias: /contacts.html
 ---
 
 {% img center /images/qr-code.gif [8xx8 QR CODE] %}

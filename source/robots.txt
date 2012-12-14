@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /think/
+Disallow: /write/
+Disallow: /produce.html
+Disallow: /contacts.html
