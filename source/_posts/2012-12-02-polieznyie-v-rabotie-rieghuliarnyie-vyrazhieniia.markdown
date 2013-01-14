@@ -3,7 +3,7 @@ layout: post
 title: "Полезные в работе регулярные выражения"
 date: 2011-11-08 00:26
 comments: true
-categories: Stuf
+categories: Stuff
 tags:
   - regexp
 ---
