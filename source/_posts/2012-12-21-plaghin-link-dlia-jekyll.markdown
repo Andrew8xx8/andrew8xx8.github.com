@@ -30,8 +30,9 @@ tags:
 Например, имеем такой шаблон с меню:
 
 ```html
+{% raw %}
  <ul>
-   <li>{% link /blog Blog %}
+   <li>\{% link /blog Blog %\}
    <li>
      {% link /about About %}
      <ul>
@@ -39,11 +40,13 @@ tags:
      </ul>
    </li>
  </ul>
+{% endraw %}
 ```
 
 На странице с автором (`/about/author`) сгенерируется такой код:
 
 ```html
+{% raw %}
  <ul>
    <li><a href="/blog">Blog</a></li>
    <li>
@@ -53,6 +56,7 @@ tags:
      </ul>
    </li>
  </ul>
+{% endraw %}
 ```
 
 Смешно, но документация с примерами к плагину занимет больше строк чем сам код.
