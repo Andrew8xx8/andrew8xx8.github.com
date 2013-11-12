@@ -3,7 +3,7 @@ layout: post
 title: "ZSH: неработающие кнопки Home и End"
 date: 2011-12-03 13:54
 comments: true
-categories: 
+categories:
   - Linux
 tags:
   - putty
@@ -14,6 +14,12 @@ tags:
 
 Решение простое. Нужно в файле ~/.zshrc добавить эти строки:
 
-{% gist 2768395 %}
+```
+bindkey "^[[1~" beginning-of-line
+bindkey "^[[4~" end-of-line
+
+bindkey "^[OH" beginning-of-line
+bindkey "^[OF" end-of-line
+```
 
 Первые две для Putty другие для Gnome (Mate) Trerminal.

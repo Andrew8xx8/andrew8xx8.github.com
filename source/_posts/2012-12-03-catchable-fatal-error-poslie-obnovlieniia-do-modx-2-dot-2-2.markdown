@@ -6,6 +6,7 @@ comments: true
 categories: MODx
 tags:
   - modx
+  - php
 ---
 После обновления до 2.2.2 в админской зоне стала появляться такая ошибка:
 
@@ -15,7 +16,7 @@ Catchable fatal error: Argument 1 passed to xPDOObject::load() must be an instan
 
 Очень долго думал как решить. Оказалось суть в том, что при выходе из скриптанеправильно обрабатываются хендлеры повешенные на сессию. Что бы это исправить нужно добавить перед каждым выовом exit() в файлах /manager/min/index.php и /manager/min/lib/Minify.php вот такую строку:
 
-```
+```php
 @session_write_close();
 ```
 
