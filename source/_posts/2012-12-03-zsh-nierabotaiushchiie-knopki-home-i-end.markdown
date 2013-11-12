@@ -6,6 +6,7 @@ comments: true
 categories:
   - Linux
 tags:
+  - cli
   - putty
   - zsh
   - bash

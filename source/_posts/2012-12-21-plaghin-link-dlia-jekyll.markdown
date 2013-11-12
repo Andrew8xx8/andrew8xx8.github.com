@@ -3,9 +3,8 @@ layout: post
 title: "Плагин link для Jekyll"
 date: 2012-12-21 01:19
 comments: true
-categories: 
+categories:
   - Ruby
-  - Jekyll
 tags:
   - ruby
   - jekyll
@@ -19,7 +18,7 @@ tags:
 находится.
 
 Я написал плагин для этого. [https://github.com/Andrew8xx8/jekyll-link](https://github.com/Andrew8xx8/jekyll-link)
- 
+
 <!-- more -->
 
 Плагин добавляет новый тег `link` с помощью которого генерируется HTML

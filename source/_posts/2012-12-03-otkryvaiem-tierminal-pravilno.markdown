@@ -5,6 +5,7 @@ date: 2012-12-03 14:01
 comments: true
 categories: Linux
 tags:
+  - cli
   - mate-terminal
   - gnome-terminal
   - zsh

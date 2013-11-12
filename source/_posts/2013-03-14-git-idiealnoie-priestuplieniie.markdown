@@ -5,7 +5,7 @@ date: 2013-03-14 12:09
 comments: true
 categories: Git
 tags:
-  - git
+  - git merge
   - fast-forward
   - fuckup
 ---
@@ -58,21 +58,21 @@ branch staging into 'feature/fourth'`, то в последний раз во в
 опубликуем.
 
 ```
-$ git flow feature start first  
+$ git flow feature start first
 $ touch first
 $ git add first
 $ git commit -m "First feature commit"
-$ git flow feature publish first 
+$ git flow feature publish first
 ```
 
 То же самое сделаем для `second`
 
 ```
-$ git flow feature start second 
+$ git flow feature start second
 $ touch second
 $ git add second
 $ git commit -m "Second feature commit"
-$ git flow feature publish second 
+$ git flow feature publish second
 ```
 
 {% img /images/content/gitfuckup/2.png [] %}
@@ -80,20 +80,20 @@ $ git flow feature publish second
 Теперь менеджер попросил нас вылить вторую задачу на тестовый сервер:
 
 ```
-$ git checkout -b staging  
+$ git checkout -b staging
 $ git merge feature feature/second
-$ git merge feature/second   
-$ git push --set-upstream origin staging             
+$ git merge feature/second
+$ git push --set-upstream origin staging
 ```
 
 Но, предположим, у нас произошла ошибка в приложении, связанная только с
 тестовым сервером и другого программиста попросили её исправить:
 
 ```
-$ touch staging-fix    
-$ git add staging-fix   
-$ git commit -m "Staging fixed" 
-$ git push    
+$ touch staging-fix
+$ git add staging-fix
+$ git commit -m "Staging fixed"
+$ git push
 ```
 
 {% img /images/content/gitfuckup/3.png [] %}
@@ -102,12 +102,12 @@ $ git push
 мы перешли в `staging`, обновили его и влили в него первую задачу:
 
 ```
-$ git checkout staging  
+$ git checkout staging
 $ git pull --rebase origin staging
 From github.com:Andrew8xx8/try_git
  * branch            staging    -> FETCH_HEAD
 Current branch staging is up to date.
-$ git merge feature/first  
+$ git merge feature/first
 $ git push
 ```
 
@@ -118,11 +118,11 @@ $ git push
 Мы возвращаемся к разработке второй задачи, но нас кто-то отвлёк и случайно получается, что "на автомате из истории" мы вполняем такую последовательность комманд:
 
 ```
-git checkout feature/first     
-git pull --rebase origin staging 
+git checkout feature/first
+git pull --rebase origin staging
 ```
 
-И ничего вроде бы страшного не произошло, в дальнейшей рутине мы можем ничего не заметить. Так называемый мерж коммит не создался, потому что мерж прошёл в режиме `fast-forward`. 
+И ничего вроде бы страшного не произошло, в дальнейшей рутине мы можем ничего не заметить. Так называемый мерж коммит не создался, потому что мерж прошёл в режиме `fast-forward`.
 
 История, если бы в ней не было коммита `Staging fixed`,  тоже сильно не
 изменилась.
@@ -144,9 +144,9 @@ a0184dc Add all the octocat txt files
 быть гораздо больше) и публикуем её.
 
 ```
-$ touch first-finish  
-$ git add first-finish 
-$ git commit -m "First feature finished" 
+$ touch first-finish
+$ git add first-finish
+$ git commit -m "First feature finished"
 $ git push
 ```
 
@@ -164,10 +164,10 @@ $ git push
 делаем:
 
 ```
-$ git flow feature finish first 
-$ git push 
+$ git flow feature finish first
+$ git push
 $ git flow release start v1
-$ git flow release finish v1  
+$ git flow release finish v1
 $ git push
 ```
 

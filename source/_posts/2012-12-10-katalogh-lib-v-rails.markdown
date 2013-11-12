@@ -3,12 +3,11 @@ layout: post
 title: "Каталог lib в Rails"
 date: 2012-12-10 10:58
 comments: true
-categories: 
+categories:
   - Ruby
-  - Ruby On Rails
 tags:
   - ruby
-  - rails
+  - ruby on rails
   - tconsole
   - rake
 ---
@@ -27,7 +26,7 @@ config.autoload_paths += %W(#{config.root}/lib)
 config.autoload_paths += Dir["#{config.root}/lib/**/"]
 ```
 
-Затем тестирование. 
+Затем тестирование.
 
 Плохая идея подключать эти тесты прямо в `test_helper.rb`, типа такого:
 
