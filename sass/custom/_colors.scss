@@ -8,8 +8,8 @@
 //$nav-bg-front: image-url('noise.png');
 //$nav-bg-back: linear-gradient(lighten($nav-bg, 8), $nav-bg, darken($nav-bg, 11));
 $sidebar-bg: rgba(0, 0, 0, 0.5);
-$sidebar-link-color: saturate(#edf, 10);
-$sidebar-link-color-hover: darken(#fff, 9);
+$sidebar-link-color: #fff;
+$sidebar-link-color-hover: #71d1fb;
 $sidebar-color: saturate(#eee, 10);
 //$footer-bg: #ccc !default;
 //$footer-bg-front: image-url('noise.png');
