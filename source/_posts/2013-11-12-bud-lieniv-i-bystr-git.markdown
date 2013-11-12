@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Будь ленив и быстр. Git"
-date: 2013-10-23 12:32
+date: 2013-11-12 12:32
 comments: true
 categories: Git
 tags:
