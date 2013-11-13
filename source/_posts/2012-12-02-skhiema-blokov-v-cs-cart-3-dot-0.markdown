@@ -3,11 +3,11 @@ layout: post
 title: "Схема блоков в CS-Cart 3.0"
 date: 2012-04-17 10:48
 comments: true
-categories: CS-Cart
+categories: PHP
 tags:
   - cs-cart
-  - php
   - "block manager"
+description: "Как добавть блок в блок менеджере cs-cart"
 ---
 
 Менеджер блоков в Cs-cart 3.0 достаточно сложная штука. И я хотел бы сделать попытку

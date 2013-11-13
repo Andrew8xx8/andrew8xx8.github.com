@@ -7,7 +7,9 @@ categories: Git
 tags:
   - git merge
   - fast-forward
-  - fuckup
+  - факап
+description: "Как смержить одну ветку в другую, да так, чтобы никто не узнал кто и когда это сделал"
+keywords: "git, кривой merge, fast-forward. no fast forward, git-flow"
 ---
 В компании, в которой я  работаю в настоящее время, мы используем при
 разработке довольно распространённую [модель ветвления](http://nvie.com/posts/a-successful-git-branching-model/), а в качестве

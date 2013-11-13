@@ -5,9 +5,12 @@ date: 2013-11-12 12:32
 comments: true
 categories: Git
 tags:
-  - git
+  - git push
   - cli
   - aliases
+
+description: "Как меньше делать и больше отдыхать при работе с Git"
+keywords: "git, aliases, псевдонимы, командная строка"
 ---
 
 ```

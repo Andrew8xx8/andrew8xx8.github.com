@@ -6,10 +6,11 @@ comments: true
 categories:
   - Ruby
 tags:
-  - ruby
   - jekyll
   - links
   - plugin
+keywords: "ruby, jekyll, links, plugin, подсветка ссылок"
+description: "Jekyll (octopress) как подсветить текущую открытую ссылку"
 ---
 
 Нужно было для одного статического сайта сделать так, чтобы все ссылки

@@ -6,10 +6,9 @@ comments: true
 categories:
   - Ruby
 tags:
-  - ruby
   - ruby on rails
-  - tconsole
-  - rake
+keywords: "lib, ruby on rails, tconsole, rake"
+description: "Как подключить каталог lib в Ruby On Rails"
 ---
 
 Однозначного и общеизвестного ответа на вопрос "Что положить в либ?"

@@ -3,11 +3,13 @@ layout: post
 title: "Резиновый магазин"
 date: 2012-03-20 12:35
 comments: true
-categories: CS-Cart
+categories: PHP
 tags:
   - cs-cart
-  - php
+description: "Как сделать cs-cart резиновым"
+keywords: "cs-cart, grid 960, 3.0, резиновая верстка"
 ---
+
 Начиная с версии CS-Cart 3.0 используется новая философия блоков и блок менеджера в частности.
 
 Ключевым моментом здесь является использование CSS фреймворка 960gs (сайт проекта http://960.gs).

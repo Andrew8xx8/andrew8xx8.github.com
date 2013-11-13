@@ -3,10 +3,10 @@ layout: post
 title: "Catchable fatal error после обновления до MODx 2.2.2"
 date: 2011-10-03 13:57
 comments: true
-categories: MODx
+categories: PHP
 tags:
   - modx
-  - php
+  - факап
 ---
 После обновления до 2.2.2 в админской зоне стала появляться такая ошибка:
 

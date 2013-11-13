@@ -3,11 +3,12 @@
 # ----------------------- #
 
 url: http://8xx8.ru
-title: 8xx8
+title: 8xx8 (Андрей Кулаков)
 subtitle: Творческая мастерская
-author: 8xx8
+author: Andrey Kulakov (8xx8)
 simple_search: http://google.com/search
-description:
+description: Мысли о программировании, технологиях и проблемах с которыми сталкиваюсь я в повседневной работе
+keywords: "Персональный блог, программирование, идеи, факапы, Waytag, ulway, git, zsh, ruby, rails, php, cs-cart, jekyll, будь ленив и быстр"
 
 # Default date format is "ordinal" (resulting in "July 22nd 2007")
 # You can customize the format as defined in
