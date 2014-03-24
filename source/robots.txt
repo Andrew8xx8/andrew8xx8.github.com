@@ -2,6 +2,6 @@
 layout: nil
 ---
 User-agent: *
-Sitemap: {{ site.url }}/sitemap.xml
-Disallow:
+Disallow: 
 
+Sitemap: {{ site.url }}/sitemap.xml 
