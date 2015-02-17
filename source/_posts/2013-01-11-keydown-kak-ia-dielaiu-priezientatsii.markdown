@@ -3,7 +3,7 @@ layout: post
 title: "Keydown - как я делаю презентации"
 date: 2013-01-11 14:57
 comments: true
-categories: Жизнь
+categories: Life
 tags:
   - vim
   - markdown

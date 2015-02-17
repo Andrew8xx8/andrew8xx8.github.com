@@ -3,7 +3,7 @@ layout: post
 title: "Открываем терминал правильно"
 date: 2012-12-03 14:01
 comments: true
-categories: Жизнь
+categories: Life
 tags:
   - cli
   - zsh

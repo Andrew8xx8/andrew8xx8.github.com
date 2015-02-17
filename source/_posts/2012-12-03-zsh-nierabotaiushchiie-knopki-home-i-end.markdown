@@ -4,7 +4,7 @@ title: "ZSH: неработающие кнопки Home и End"
 date: 2011-12-03 13:54
 comments: true
 categories:
-  - Жизнь
+  - Life
 tags:
   - cli
   - zsh
