@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Минус мерж"
+title: "Минус-мерж"
 date: 2015-02-17 19:49:58 +0300
 comments: true
 categories: Git
@@ -56,3 +56,6 @@ Fast-forward
  create mode 100644 2
 8xx8@mac ~/git-minus[staging] $
 ```
+
+PROFIT!
+
