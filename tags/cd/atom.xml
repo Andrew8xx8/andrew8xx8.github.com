@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: cd | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/cd/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Минус-мерж]]></title>
+    <link href="http://8xx8.ru/blog/2015/02/17/minus-merge/"/>
+    <updated>2015-02-17T23:49:58+07:00</updated>
+    <id>http://8xx8.ru/blog/2015/02/17/minus-merge</id>
+    <content type="html"><![CDATA[<p>Большинство скорее всего знакомы с &ldquo;магическим&rdquo; аргументом <code>-</code> для комнады <code>cd</code> в консоли. Это переход в предыдущую выбранную дирректорию.</p>
+
+<p>Работает так:</p>
+
+<p><code>bash
+8xx8@mac ~/git-minus[master] $ cd /
+8xx8@mac / $ cd -
+8xx8@mac ~/git-minus[master] $
+</code></p>
+
+<p>Некоторые знают о том, что git поддерживает похожее поведение при смене ветки:</p>
+
+<p><code>bash
+8xx8@mac ~/git-minus[master] $ git co feature
+Switched to branch 'feature'
+8xx8@mac ~/git-minus[feature] $ git co -
+Switched to branch 'master'
+8xx8@mac ~/git-minus[master] $ git co -
+Switched to branch 'feature'
+8xx8@mac ~/git-minus[feature] $
+</code></p>
+
+<p>Здесь я использовал алиас <code>co</code> для <code>checkout</code>. Вообще про алиасы у меня была отдельная статья.</p>
+
+<p>В общем все понятно и логично. Но мало кто знает что аргумент <code>-</code> можно передавать как аргумент к merge.  Давайте посмотрим что из этого выходит.</p>
+
+<!-- more -->
+
+
+<p>На этот варанант я натолкнулся совсем случайно. Мы используем git-flow и названия веток у нас, как результат, длинные. Сливать свои изменения в staging приходится достаточно часто, вот и я подумал, а как так сделать, что бы поменьше делать.</p>
+
+<p><code>bash
+8xx8@mac git-minus[feature/coll_stuff] $ git commit -m "second"
+[feature 8f65d91] second
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+  create mode 100644 2
+8xx8@mac ~/git-minus[feature/coll_stuff] $ git co staging
+Switched to branch 'staging'
+8xx8@mac ~/git-minus[staging] $ g merge -
+Updating a2c0a4d..8f65d91
+Fast-forward
+ 2 | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 2
+8xx8@mac ~/git-minus[staging] $
+</code></p>
+
+<p>PROFIT!</p>
+]]></content>
+  </entry>
+  
+</feed>

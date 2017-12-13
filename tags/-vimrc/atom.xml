@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: .vimrc | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/-vimrc/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Поиск по проекту с помощью Ag]]></title>
+    <link href="http://8xx8.ru/blog/2014/03/24/vim-ag/"/>
+    <updated>2014-03-24T12:34:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2014/03/24/vim-ag</id>
+    <content type="html"><![CDATA[<p>Я давно пользуюсь <a href="https://github.com/ggreer/the_silver_searcher">The Silver Searcher</a> как заменой стандартному <code>grep</code>. О достоинствах такого выбора можно посмотреть на странице проекта.</p>
+
+<p>Для своего любимого редактора я долгое время использовал плагин <a href="https://github.com/mileszs/ack.vim">Ack</a>. Он обладает рядом багов, но в целом пользоваться можно.</p>
+
+<p>Недавно я наткнулся на его форк <a href="https://github.com/rking/ag.vim">Ag</a>. Зацепило в нем две вещи:</p>
+
+<ul>
+<li>строка поиска сохраняется в регистр поиска;</li>
+<li>наличие комманды AgFromSearch, которая позволяет искать то, чтобыло в регистре поиска.</li>
+</ul>
+
+
+<p>Эти факторы позитивно влияют на продуктивность.</p>
+
+<p>В найденом файле все вхождения будут подсвечены (ну если включен <code>hlsearch</code>), и по нему сразу можно будет перемещаться с помощью <code>n</code> или <code>N</code>.</p>
+
+<p>Если нужно поискать слово из текущего файла, нажимаем на этом слове <code>*</code> и выполнив <code>:AgFromSearch</code> без параметров сразу получаем результат.</p>
+
+<p>Так же интересной показалась команда  <code>:AgFile</code>, для поиска файла по имени.</p>
+
+<p>Ну и как бонус, две буквы набирать проще трех.</p>
+
+<!-- more -->
+
+
+<p>Установка плагина не доставит хлопот, если вы используете <a href="https://github.com/gmarik/Vundle.vim"> Vundle </a>, достаточно вписать в ваш .vimrc:</p>
+
+<p><code>
+Bundle 'rking/ag.vim'
+</code></p>
+
+<p>Из настроек я посчитал необходиммым:</p>
+
+<p>```
+  &ldquo; Конфиг для вызова ag
+  let g:agprg = &lsquo;ag &mdash;nogroup &mdash;nocolor &mdash;column &mdash;smart-case&rsquo;</p>
+
+<p>  let g:aghighlight=1 &ldquo; Подсветить поиск
+  cabbrev As AgFromSearch &rdquo; Псевдоним чтобы меньше писать
+```</p>
+
+<p><a href="https://github.com/Andrew8xx8/dotfiles/commit/b320da45a2ece73611a5f5b855539a41a2f38bc8"> Коммит </a> с изменениями в моем репозитории.</p>
+]]></content>
+  </entry>
+  
+</feed>

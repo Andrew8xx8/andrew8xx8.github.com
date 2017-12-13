@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: факап | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/факап/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Все или не все? (git push)]]></title>
+    <link href="http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie/"/>
+    <updated>2013-06-12T13:45:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie</id>
+    <content type="html"><![CDATA[<p>Часто ли вы задумывались над тем, какие ветки будут отправлены в
+удалённый репозиторий при выполнении команды <code>push</code>?</p>
+
+<p>А поможет ли вам задуматься над этим такая картина?</p>
+
+<p><img src="/images/content/force-push/1.png" title="[]" ></p>
+
+<p>Наверное, поможет, особенно если увидеть это в ночь перед релизом. А
+началось-то все с того, что хотели фичу красиво слить через rebase.</p>
+
+<p>Так давайте разберёмся, что пошло не так.</p>
+
+<!-- more -->
+
+
+<p>Гит пушит всё. Да, вы не ослышались. По умолчанию это так и есть. Беседы
+о том, что поведение по умолчанию не безопасное оставим за кадром
+и найдём решение.</p>
+
+<p>```
+$ git push &mdash;help</p>
+
+<pre><code>   git push [--all | --mirror | --tags] [-n | --dry-run]
+</code></pre>
+
+<p>[&mdash;receive-pack=&lt;git-receive-pack>]</p>
+
+<pre><code>              [--repo=&lt;repository&gt;] [-f | --force] [--prune] [-v |
+</code></pre>
+
+<p>&mdash;verbose] [-u | &mdash;set-upstream]</p>
+
+<pre><code>              [&lt;repository&gt; [&lt;refspec&gt;...]]
+</code></pre>
+
+<p>```</p>
+
+<p>Как видно из документации, мы можем пропустить указание назначения(repository) и refspec (конструкция вида ЛОКАЛЬНАЯ<em>ВЕТКА[:][УДАЛЁННАЯ</em>ВЕТКА]), по умолчанию в качестве назначения будет использовано origin, а в качестве refspec будет использована одна из стратегий определённых в настройке <code>push.default</code>. Она может принимать такие значения:</p>
+
+<ul>
+<li><code>nothing</code> &ndash; не пушить ничего</li>
+<li><code>matching</code> &ndash; пушить все ветки, названия которых в локальном
+репозитории
+совпадают с названиями в удалённом репозитории.
+<em>Это как раз та опция, которая используется, если ничего не задано</em></li>
+<li><code>upstream</code> &ndash; пушить только текущую ветку в ту ветку на удалённом
+репозитории, которая прописана в конфиге как upstream</li>
+<li><code>tracking</code> &ndash; устаревший синоним для <code>upstream</code></li>
+<li><code>current</code> &ndash; пушить только текущую ветку в ту ветку на удалённом
+репозитории с которой совпадёт имя</li>
+</ul>
+
+
+<p>Самый лучший способ решить проблему – это указывать repository и refspec всегда при выполнении команд <code>push</code>/<code>pull</code>.</p>
+
+<p>Либо полностью:</p>
+
+<p><code>
+git push origin branch:branch
+</code></p>
+
+<p>Либо в качестве refspec использовать HEAD:</p>
+
+<p><code>
+git push origin HEAD
+</code></p>
+
+<p>В таком случае текущая ветка будет запушена в ветку с таким же названием
+в удалённом репозитории.</p>
+
+<p>Можно сделать псевдоним для команды, чтобы было удобнее</p>
+
+<p><code>
+git config --global alias.put 'git push origin HEAD'
+</code></p>
+
+<p>Есть и другой способ. Изменить поведение по умолчанию при пуше. Но у
+такого подхода есть существенный минус. Как минимум можно привыкнуть к
+тому, что система ведёт себя по другому и в том месте, где она настроена
+не так как у вас или забыв при смене системы настроить её, можно опять
+попасть в ситуацию как на картинке в начале статьи.</p>
+
+<p><code>bash
+git config --global push.default upstream
+</code></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Git: Идеальное преступление]]></title>
+    <link href="http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie/"/>
+    <updated>2013-03-14T12:09:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie</id>
+    <content type="html"><![CDATA[<p>В компании, в которой я  работаю в настоящее время, мы используем при
+разработке довольно распространённую <a href="http://nvie.com/posts/a-successful-git-branching-model/">модель ветвления</a>, а в качестве
+инструмента для стандартизации работы по этой схеме <a href="https://github.com/nvie/gitflow">git-flow</a>. Так же мы
+дополнили эту схему ещё одной веткой &mdash; <code>staging</code>. Это временная ветка, в
+которую сливаются <code>feature branches</code>, и на основе неё делаются
+промежуточные релизы на тестовый сервер. Естественно, всё, что
+происходит в этой ветке, нужно для предварительного просмотра и
+тестирования выполненных задач и никак не должно попадать ни в основную
+ветку разработки, ни в master, то есть в итоговый релиз. В принципе,
+схема работы достаточно удачная. Она упрощает взаимодействие и работу
+большой команды с разным навыком работы с git, и нештатные ситуации
+случаются достаточно редко, но зато, если случаются, то это запоминается
+надолго.</p>
+
+<!-- more -->
+
+
+<p>Началось всё с того, что мы стали замечать, что в <code>master</code> или в <code>develop</code>
+ветку начинают попадать коммиты из ветки <code>staging</code>. Самые распространённые
+из них &mdash; это мержи веток с задачами. Первый раз решили, что кто-то по
+невнимательности примержил стейджинг в ветку с задачей и потом вылил,
+разбираться точно как и кто не стали, просто всем ещё раз рассказали как
+нужно вести разработку и посоветовали внимательнее следить за тем, что
+они делают.</p>
+
+<p>Затем история повторилась, но уже в другой команде с другими людьми.
+Стали копать, выяснили, что и раньше такое было, просто никто не замечал
+лишних коммитов в истории, потому что в принципе код работал, тесты
+проходили и ладно.</p>
+
+<p>Разгадка проста и понятна сразу, кто-то примержил staging в ветку со
+своей задачей, а потом через некоторое время, когда она вышла в релиз,
+все нежелательные коммиты и попали в <code>develop</code>, а  потом &mdash; в <code>master</code>. Но
+как? Если первый раз нам удалось найти злополучный коммит вида <code>Merge
+branch staging into 'feature/fourth'</code>, то в последний раз во всей истории
+всё было чисто. Каждый участник команды говорил, что он всё делал по
+инструкции и по модели ветвления.</p>
+
+<p>Те кто знаком с тем, как происходит мерж веток в git, наверное, уже
+догадались почему так. А остальным я продемонстрирую на примере.</p>
+
+<p>Мы имеем новый репозиторий с несколькими коммитами в <code>master</code> ветку и
+одним в <code>develop</code></p>
+
+<p><img src="/images/content/gitfuckup/1.png" title="[]" ></p>
+
+<p>Далее создадим новую задачу(<code>first</code>), закоммитим в неё первый коммит и
+опубликуем.</p>
+
+<p><code>
+$ git flow feature start first
+$ touch first
+$ git add first
+$ git commit -m "First feature commit"
+$ git flow feature publish first
+</code></p>
+
+<p>То же самое сделаем для <code>second</code></p>
+
+<p><code>
+$ git flow feature start second
+$ touch second
+$ git add second
+$ git commit -m "Second feature commit"
+$ git flow feature publish second
+</code></p>
+
+<p><img src="/images/content/gitfuckup/2.png" title="[]" ></p>
+
+<p>Теперь менеджер попросил нас вылить вторую задачу на тестовый сервер:</p>
+
+<p><code>
+$ git checkout -b staging
+$ git merge feature feature/second
+$ git merge feature/second
+$ git push --set-upstream origin staging
+</code></p>
+
+<p>Но, предположим, у нас произошла ошибка в приложении, связанная только с
+тестовым сервером и другого программиста попросили её исправить:</p>
+
+<p><code>
+$ touch staging-fix
+$ git add staging-fix
+$ git commit -m "Staging fixed"
+$ git push
+</code></p>
+
+<p><img src="/images/content/gitfuckup/3.png" title="[]" ></p>
+
+<p>Далее нас попросили вылить на тестовый сервер первую задачу. Для этого
+мы перешли в <code>staging</code>, обновили его и влили в него первую задачу:</p>
+
+<p><code>
+$ git checkout staging
+$ git pull --rebase origin staging
+From github.com:Andrew8xx8/try_git
+ * branch            staging    -&gt; FETCH_HEAD
+Current branch staging is up to date.
+$ git merge feature/first
+$ git push
+</code></p>
+
+<p><img src="/images/content/gitfuckup/4.png" title="[]" ></p>
+
+<p>Пока всё верно. От ветки <code>develop</code> сделаны две задачи. В ветку <code>staging</code> влиты обе ветки с задачами и есть ещё один коммит нужный только для неё.</p>
+
+<p>Мы возвращаемся к разработке второй задачи, но нас кто-то отвлёк и случайно получается, что &ldquo;на автомате из истории&rdquo; мы вполняем такую последовательность комманд:</p>
+
+<p><code>
+git checkout feature/first
+git pull --rebase origin staging
+</code></p>
+
+<p>И ничего вроде бы страшного не произошло, в дальнейшей рутине мы можем ничего не заметить. Так называемый мерж коммит не создался, потому что мерж прошёл в режиме <code>fast-forward</code>.</p>
+
+<p>История, если бы в ней не было коммита <code>Staging fixed</code>,  тоже сильно не
+изменилась.</p>
+
+<p><code>
+$ git log --oneline
+87bb177 Merge branch 'feature/first' into staging
+dc4b6d6 Staging fixed
+56351b4 Second feature commit
+7b843ef First feature commit
+f664597 Commit in develop
+dfcf2d5 Removed all the cats
+a0184dc Add all the octocat txt files
+1aad731 Added cute octocat story
+</code></p>
+
+<p>Но кто смотрит историю после перехода в ветку? Поэтому вы продолжаете
+работу. Делаем ещё один коммит в первую задачу (хотя в реале их может
+быть гораздо больше) и публикуем её.</p>
+
+<p><code>
+$ touch first-finish
+$ git add first-finish
+$ git commit -m "First feature finished"
+$ git push
+</code></p>
+
+<p>Никаких подозрительных сообщений в консоли. Всё вроде бы нормально.
+Поэтому мы продолжаем спокойно спать по ночам, а остальная комманда
+работать над проектом, потому что по сути только наша ветка содержит
+сейчас стейджинг.</p>
+
+<p><img src="/images/content/gitfuckup/5.png" title="[]" ></p>
+
+<p>Хотя уже по графику видно, что произошёл некоторый факап, но когда веток
+и людей много этого незаметно, да и кто смотрит графики.</p>
+
+<p>Затем нас просят выпустить первую задачу и сделать релиз, что мы и
+делаем:</p>
+
+<p><code>
+$ git flow feature finish first
+$ git push
+$ git flow release start v1
+$ git flow release finish v1
+$ git push
+</code></p>
+
+<p><img src="/images/content/gitfuckup/6.png" title="[]" ></p>
+
+<p>Ну вот и всё. Полный фарш. В релиз попало то, что было в <code>staging</code>. В истории всё чисто с точки зрения того, что нет мерж коммита:</p>
+
+<p><code>
+$ git log --oneline
+5db05f9 Merge branch 'release/v1'
+ffb5ee5 Merge branch 'feature/first' into develop
+d93f812 First feature finished
+87bb177 Merge branch 'feature/first' into staging
+dc4b6d6 Staging fixed
+56351b4 Second feature commit
+7b843ef First feature commit
+f664597 Commit in develop
+dfcf2d5 Removed all the cats
+a0184dc Add all the octocat txt files
+1aad731 Added cute octocat story
+</code></p>
+
+<p>Если посмотреть reflog, то вот те строчки, которые были сгенерированы во
+время выполнения ошибочной команды:</p>
+
+<p><code>
+87bb177 HEAD@{6}: rebase finished: returning to refs/heads/feature/first
+87bb177 HEAD@{7}: checkout: moving from feature/first to 87bb1774e8d6555a06707a03ef1f0f9636206317^0
+7b843ef HEAD@{8}: checkout: moving from feature/second to feature/first
+</code></p>
+
+<p>Тоже ничего необычного.</p>
+
+<p>Причина такого поведения &mdash; это fast-forward мерж. При таком слиянии в
+случае, если это возможно, указатель ветки просто перемещается на то же
+место, куда указывает ветка, которая вливается:</p>
+
+<p><code>
+git checkout develop
+git merge feature
+</code></p>
+
+<p><img src="http://8xx8.ru/git-kmb/images/mr1.png" alt="" /></p>
+
+<p>Как исправить получившуюся ситуацию? Никак. Можно попробовать найти
+ветку, в которую влит <code>staging</code> и попробовать откатить её слияние в
+<code>develop</code>,
+а также удалить коммиты с релизом и почистить все ветки, но это долго и
+сложно, особенно если веток с задачами много.</p>
+
+<p>Что делать чтобы такое не произошло?</p>
+
+<p>Что делать, чтобы такое не произошло?</p>
+
+<ol>
+<li>Внимательно следить за исполняемыми командами.</li>
+<li>Если используется git-flow, то использовать его команды для
+обновления и публикации веток.</li>
+<li>Использовать либо полный синтаксис команды <code>git push/pull</code>,  либо
+полностью сокращённый синтаксис без указания веток. Потому что в
+ситуации из приведённого примера не указывается, в какую ветку слить
+изменения, поэтому так и получилось, что информация из <code>staging</code> попала в
+ветку с задачей.</li>
+</ol>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ZSH: неработающие кнопки Home и End]]></title>
+    <link href="http://8xx8.ru/blog/2011/12/03/zsh-nierabotaiushchiie-knopki-home-i-end/"/>
+    <updated>2011-12-03T13:54:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2011/12/03/zsh-nierabotaiushchiie-knopki-home-i-end</id>
+    <content type="html"><![CDATA[<p>При доступе к серверу из Putty или терминала Gnome иногда не работают кнопки Home и End.</p>
+
+<p>Решение простое. Нужно в файле ~/.zshrc добавить эти строки:</p>
+
+<p>```
+bindkey &ldquo;^[[1~&rdquo; beginning-of-line
+bindkey &ldquo;^[[4~&rdquo; end-of-line</p>
+
+<p>bindkey &ldquo;^[OH&rdquo; beginning-of-line
+bindkey &ldquo;^[OF&rdquo; end-of-line
+```</p>
+
+<p>Первые две для Putty другие для Gnome (Mate) Trerminal.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Catchable fatal error после обновления до MODx 2.2.2]]></title>
+    <link href="http://8xx8.ru/blog/2011/10/03/catchable-fatal-error-poslie-obnovlieniia-do-modx-2-dot-2-2/"/>
+    <updated>2011-10-03T13:57:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2011/10/03/catchable-fatal-error-poslie-obnovlieniia-do-modx-2-dot-2-2</id>
+    <content type="html"><![CDATA[<p>После обновления до 2.2.2 в админской зоне стала появляться такая ошибка:</p>
+
+<p><code>
+Catchable fatal error: Argument 1 passed to xPDOObject::load() must be an instance of xPDO, instance of modX given in core/xpdo/om/xpdoobject.class.php on line 404
+</code></p>
+
+<p>Очень долго думал как решить. Оказалось суть в том, что при выходе из скриптанеправильно обрабатываются хендлеры повешенные на сессию. Что бы это исправить нужно добавить перед каждым выовом exit() в файлах /manager/min/index.php и /manager/min/lib/Minify.php вот такую строку:</p>
+
+<p><code>php
+@session_write_close();
+</code></p>
+
+<p>Возможно есть ещё места где может понадобиться такой &ldquo;хак&rdquo;.</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,355 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Быстрый способ передать Template Variable (TV) в снипет в MODx Revolution - 8xx8 (Андрей Кулаков)</title>
+  <meta name="author" content="Andrey Kulakov (8xx8)">
+
+  
+  <meta name="description" content="Что бы быстро и просто передать Template Variable (TV) параметр в снипет в MODx Revolution достаточно передать его как параметр при вызове снипета. &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="8xx8 (Андрей Кулаков)" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<meta name='yandex-verification' content='6b1590575f348e84' />
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">8xx8 (Андрей Кулаков)</a></h1>
+  
+    <h2>Творческая мастерская</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:8xx8.ru" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Блог</a></li>
+  <li><a href="/blog/archives">Архив</a></li>
+  <li><a href="/contacts">Контакты</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Быстрый способ передать Template Variable (TV) в снипет в MODx Revolution</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-12T13:59:00+07:00" pubdate data-updated="true">Jan 12<span>th</span>, 2012</time>
+        
+           | <a href="#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Что бы быстро и просто передать Template Variable (TV) параметр в снипет в MODx Revolution достаточно передать его как параметр при вызове снипета. Например создадим параметр TV и назовём его MyColor затем передадим в снипет его таким образом при вызове:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="p">[[</span><span class="nx">MySnippet</span><span class="o">?</span> <span class="o">&amp;</span><span class="nx">color</span><span class="o">=</span><span class="sb">`[*MyColor*]`</span><span class="p">]]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Когда система будет обрабатывать шаблон она подставит значение параметра в вызов и оно передасться в сам снипет. Код MySnippet:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="k">echo</span> <span class="s1">&#39;You have entered: &#39;</span><span class="o">.</span><span class="nv">$color</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Andrey Kulakov (8xx8)</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-01-12T13:59:00+07:00" pubdate data-updated="true">Jan 12<span>th</span>, 2012</time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/php/'>PHP</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution/" data-via="8xx8ru" data-counturl="http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2011/12/03/zsh-nierabotaiushchiie-knopki-home-i-end/" title="Previous Post: ZSH: неработающие кнопки Home и End">&laquo; ZSH: неработающие кнопки Home и End</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2012/03/20/riezinovyi-maghazin/" title="Next Post: Резиновый магазин">Резиновый магазин &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>По категориям</h1>
+    <ul id="category-list"><li><a href='/blog/categories/git'>Git (5)</a></li><li><a href='/blog/categories/life'>Life (4)</a></li><li><a href='/blog/categories/php'>PHP (6)</a></li><li><a href='/blog/categories/ruby'>Ruby (2)</a></li><li><a href='/blog/categories/vim'>vim (1)</a></li></ul>
+</section>
+<section>
+  <h1>По тегам</h1>
+    <div id="tag-cloud"><a href='/tags/-vimrc' style='font-size: 115.0%'>.vimrc(1)</a> <a href='/tags/ag' style='font-size: 115.0%'>ag(1)</a> <a href='/tags/aliases' style='font-size: 115.0%'>aliases(1)</a> <a href='/tags/amend' style='font-size: 115.0%'>amend(1)</a> <a href='/tags/block-manager' style='font-size: 115.0%'>block manager(1)</a> <a href='/tags/cd' style='font-size: 115.0%'>cd(1)</a> <a href='/tags/cli' style='font-size: 160.0%'>cli(4)</a> <a href='/tags/cs-cart' style='font-size: 145.0%'>cs-cart(3)</a> <a href='/tags/fast-forward' style='font-size: 115.0%'>fast-forward(1)</a> <a href='/tags/git-checkout' style='font-size: 115.0%'>git checkout(1)</a> <a href='/tags/git-commit' style='font-size: 115.0%'>git commit(1)</a> <a href='/tags/git-merge' style='font-size: 130.0%'>git merge(2)</a> <a href='/tags/git-push' style='font-size: 130.0%'>git push(2)</a> <a href='/tags/grep' style='font-size: 115.0%'>grep(1)</a> <a href='/tags/jekyll' style='font-size: 115.0%'>jekyll(1)</a> <a href='/tags/links' style='font-size: 115.0%'>links(1)</a> <a href='/tags/markdown' style='font-size: 115.0%'>markdown(1)</a> <a href='/tags/modx' style='font-size: 130.0%'>modx(2)</a> <a href='/tags/php' style='font-size: 115.0%'>php(1)</a> <a href='/tags/plugin' style='font-size: 115.0%'>plugin(1)</a> <a href='/tags/regexp' style='font-size: 115.0%'>regexp(1)</a> <a href='/tags/ruby' style='font-size: 115.0%'>ruby(1)</a> <a href='/tags/ruby-on-rails' style='font-size: 115.0%'>ruby on rails(1)</a> <a href='/tags/tv' style='font-size: 115.0%'>tv(1)</a> <a href='/tags/vim' style='font-size: 115.0%'>vim(1)</a> <a href='/tags/zsh' style='font-size: 130.0%'>zsh(2)</a> <a href='/tags/факап' style='font-size: 160.0%'>факап(4)</a> </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/Andrew8xx8">@Andrew8xx8</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Andrew8xx8',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+<section>
+  <h1>Твиттер</h1>
+  <ul id="tweets">
+    <li class="loading">Загружаемся...</li>
+  </ul>
+  <script type="text/javascript">
+    $.domReady(function(){
+      getTwitterFeed("8xx8ru", 3, false);
+    });
+  </script>
+  <script src="/javascripts/twitter.js" type="text/javascript"> </script>
+  
+    <a href="http://twitter.com/8xx8ru" class="twitter-follow-button" data-show-count="false">Follow @8xx8ru</a>
+  
+</section>
+
+
+
+<section class="googleplus">
+  <h1>
+    <a href="https://plus.google.com/116651772594034674694?rel=author">
+      <img src="http://www.google.com/images/icons/ui/gprofile_button-32.png" width="32" height="32">
+      Google+
+    </a>
+  </h1>
+</section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2017 - Andrey Kulakov (8xx8) -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = '8xx8';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution/';
+        var disqus_url = 'http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+(function (d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+        try {
+            w.yaCounter10074490 = new Ya.Metrika({id:10074490,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true});
+        } catch(e) { }
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+        s = d.createElement("script"),
+        f = function () { n.parentNode.insertBefore(s, n); };
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = (d.location.protocol == "https:" ? "https:" : "http:") + "//mc.yandex.ru/metrika/watch.js";
+
+    if (w.opera == "[object Opera]") {
+        d.addEventListener("DOMContentLoaded", f, false);
+    } else { f(); }
+})(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="//mc.yandex.ru/watch/10074490" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-36921845-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</body>
+</html>

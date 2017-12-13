@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: amend | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/amend/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Как поттратить свои изменения в git]]></title>
+    <link href="http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git/"/>
+    <updated>2016-10-06T14:26:29+07:00</updated>
+    <id>http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git</id>
+    <content type="html"><![CDATA[<p><strong>TL;DR</strong> При изменение коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в дургую ветку.</p>
+
+<p>Иначе, если вы полностью отмените сделанные в файле изменения, то он пропадет из дифа этого коммита, и при повторном мерже с ним ничего не произойдет.  Все будет так, как и было в целевой  ветке до мержа. <code>git merge</code> будет говорить Already up-to-date, но контент файлов будет разный в этих ветках.</p>
+
+<p>Простой пример из практики. Вы написали <code>console.log</code> в своей ветке, замержили в стейджинг, задеплоили, потестили, вспомнили, что был лишний код, пошли откатили этот <code>console.log</code>, замержили в стейджинг снова, все замержилось без конфликтов, но <code>console.log</code> в стейджинге остался, а у вас в ветке нет.</p>
+
+<p>Притом это работает в любую сторону на уровне файла. Удалили строку в файле –> замерижили куда-то –> вернули туже строку в файл поменяв коммит –> замержили снова. Там где меняли строка есть, там куда мержили нет. Получается, классическая ситуация: &ldquo;А у меня на ноутбуке все работает, сами ищите что не так!&rdquo;.</p>
+
+<h2>Погнали разбираться ну как так-то</h2>
+
+<p>Создадим репозиторий и в нем два файла:</p>
+
+<!-- more -->
+
+
+<p><code>bash
+/tmp/git_fuckup $ git init
+Initialized empty Git repository in /tmp/git_fuckup/.git/
+/tmp/git_fuckup $ touch correct.txt broken.txt
+/tmp/git_fuckup $ git add .
+/tmp/git_fuckup $ git commit -m "Init commit"
+[master (root-commit) d2b04c9] Init commit
+ 2 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 broken.txt
+ create mode 100644 correct.txt
+</code></p>
+
+<p>Создадим новую ветку, напишем что-нибудь в первый и второй файлы и замержим в мастер:</p>
+
+<p><code>bash
+/tmp/git_fuckup $ git commit -m "Init commit"
+[master (root-commit) d2b04c9] Init commit
+ 2 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 broken.txt
+ create mode 100644 correct.txt
+/tmp/git_fuckup[master] $ git checkout -b feature
+Switched to a new branch 'feature'
+/tmp/git_fuckup[feature] $ echo 'I need to be here!' &gt;&gt; correct.txt
+/tmp/git_fuckup[feature] $ echo 'I need to be here!' &gt;&gt; broken.txt
+/tmp/git_fuckup[feature] $ git add .
+/tmp/git_fuckup[feature] $ git commit -m "Texts added"
+[feature 551d298] Texts added
+ 2 files changed, 2 insertions(+)
+/tmp/git_fuckup[feature] $ git checkout master
+Switched to branch 'master'
+/tmp/git_fuckup[master] $ git merge feature
+Updating d2b04c9..551d298
+Fast-forward
+ broken.txt  | 1 +
+ correct.txt | 1 +
+ 2 files changed, 2 insertions(+)
+</code></p>
+
+<p>Прверяем что все ок:</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ cat correct.txt
+I need to be here!
+/tmp/git_fuckup[master] $ cat broken.txt
+I need to be here!
+/tmp/git_fuckup[master] $ git log --oneline
+551d298 Texts added
+d2b04c9 Init commit
+</code></p>
+
+<p>Переходим снова в фичу и возвращяем файл таким каким он был до коммита, при этом не создаем новый коммит, а меняем его. Для упрощения я откатил его через git, но разницы нет никакой, можно удалить строку в файле вручную.</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ git checkout feature
+Switched to branch 'feature'
+/tmp/git_fuckup[feature] $ git checkout HEAD~1 broken.txt
+/tmp/git_fuckup[feature] $ git commit --amend
+[feature a12625d] Texts added
+ Date: Wed Dec 13 23:09:53 2017 +0700
+ 1 file changed, 1 insertion(+)
+/tmp/git_fuckup[feature] $ cat broken.txt
+/tmp/git_fuckup[feature] $
+</code></p>
+
+<p>Файл пуст, все как планировали. Внимательный читатель уже должен заметить, что вместо <code>2 files changed, 2 insertions(+)</code> имеем <code>1 file changed, 1 insertion(+)</code>. Из дифа полностью пропал один файл, что логично, мы же полностью удалили то, что добавляли и теперь этих изменений не существует в новом коммите. Важное замечание, что при изменении коммита, всегда создается новый комит с новым хешем, это знание пригодтися позже.</p>
+
+<p>Мержим теперь в мастер:</p>
+
+<p><code>bash
+/tmp/git_fuckup[feature] $ cat broken.txt
+/tmp/git_fuckup[feature] $ git checkout master
+Switched to branch 'master'
+/tmp/git_fuckup[master] $ git merge feature
+Merge made by the 'recursive' strategy.
+</code></p>
+
+<p>Все смержилось, конфликтов нет. Казалось бы что все здорово, но:</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ cat correct.txt
+I need to be here!
+/tmp/git_fuckup[master] $ cat broken.txt
+I need to be here!
+/tmp/git_fuckup[master] $ git co feature
+/tmp/git_fuckup[feature] $ cat correct.txt
+I need to be here!
+/tmp/git_fuckup[feature] $ cat broken.txt
+/tmp/git_fuckup[feature] $
+</code></p>
+
+<p>В мастере строка есть, в фиче, нет. Чтобы понять, что просиходит, надо вспомнить, как происходит мерж веток.
+При мерже ветки A в B, находится ближайший родительский коммит Y между ними и затем дифы всех коммитов от Y до А поочередно применяются в ветку B.</p>
+
+<p>Посмотрим лог мастер ветки:</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ g log --oneline --graph
+*   81825c7 Merge branch 'feature'
+|\
+| * a12625d Texts added
+* | 551d298 Texts added
+|/
+* d2b04c9 Init commit
+</code></p>
+
+<p>Посмотрим дифы коммитов, оригинального и измененного.</p>
+
+<p>```bash
+/tmp/git_fuckup[feature] $ g show a12625d
+commit a12625df8415a45f84a018532e295f6c8421238f
+Author: Andreww8xx8 <a href="&#x6d;&#97;&#x69;&#108;&#x74;&#111;&#x3a;&#x61;&#118;&#x6b;&#x40;&#x38;&#120;&#x78;&#x38;&#x2e;&#114;&#117;">&#97;&#x76;&#x6b;&#x40;&#x38;&#x78;&#x78;&#56;&#46;&#114;&#117;</a>
+Date:   Wed Dec 13 23:09:53 2017 +0700</p>
+
+<pre><code>Texts added
+</code></pre>
+
+<p>diff &mdash;git a/correct.txt b/correct.txt
+index e69de29..c20dfcd 100644
+&mdash;&ndash; a/correct.txt
++++ b/correct.txt
+@@ -0,0 +1 @@
++I need to be here!
+<code>
+</code>bash
+/tmp/git_fuckup[feature] $ g show 551d298
+commit 551d2989dc60290122d7853c3373b0e0e09757ce
+Author: Andreww8xx8 <a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#x6f;&#58;&#97;&#x76;&#x6b;&#64;&#56;&#x78;&#120;&#56;&#46;&#x72;&#x75;">&#97;&#x76;&#107;&#x40;&#56;&#x78;&#120;&#x38;&#46;&#x72;&#x75;</a>
+Date:   Wed Dec 13 23:09:53 2017 +0700</p>
+
+<pre><code>Texts added
+</code></pre>
+
+<p>diff &mdash;git a/broken.txt b/broken.txt
+index e69de29..c20dfcd 100644
+&mdash;&ndash; a/broken.txt
++++ b/broken.txt
+@@ -0,0 +1 @@
++I need to be here!
+diff &mdash;git a/correct.txt b/correct.txt
+index e69de29..c20dfcd 100644
+&mdash;&ndash; a/correct.txt
++++ b/correct.txt
+@@ -0,0 +1 @@
++I need to be here!
+/tmp/git_fuckup[feature] ±
+```</p>
+
+<p>При втором мерже <code>git</code> пытается накатить диф коммита <code>a12625d</code>. В нем только одно изменение в файле <code>correct.txt</code> и оно не конфликтует с тем, что есть в фаловой системе после коммита <code>551d298</code>, а про файл <code>broken.txt</code> в дифе <code>a12625d</code> ничего нет, по этому он тоже останется таким как был в <code>551d298</code>.</p>
+
+<p>Все комнады чтобы упростить копипаст, если вы вдруг заходтите воспроизвести ситуацию сами есть <a href="https://gist.github.com/Andrew8xx8/58319104b9b17e136f0ce7bbdabad1c6">здесь</a>.</p>
+]]></content>
+  </entry>
+  
+</feed>

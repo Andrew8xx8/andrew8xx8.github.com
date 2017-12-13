@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: modx | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/modx/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Быстрый способ передать Template Variable (TV) в снипет в MODx Revolution]]></title>
+    <link href="http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution/"/>
+    <updated>2012-01-12T13:59:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution</id>
+    <content type="html"><![CDATA[<p>Что бы быстро и просто передать Template Variable (TV) параметр в снипет в MODx Revolution достаточно передать его как параметр при вызове снипета. Например создадим параметр TV и назовём его MyColor затем передадим в снипет его таким образом при вызове:</p>
+
+<p><code>php
+[[MySnippet? &amp;color=`[*MyColor*]`]]
+</code></p>
+
+<p>Когда система будет обрабатывать шаблон она подставит значение параметра в вызов и оно передасться в сам снипет. Код MySnippet:</p>
+
+<p><code>php
+echo 'You have entered: '.$color;
+</code></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Catchable fatal error после обновления до MODx 2.2.2]]></title>
+    <link href="http://8xx8.ru/blog/2011/10/03/catchable-fatal-error-poslie-obnovlieniia-do-modx-2-dot-2-2/"/>
+    <updated>2011-10-03T13:57:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2011/10/03/catchable-fatal-error-poslie-obnovlieniia-do-modx-2-dot-2-2</id>
+    <content type="html"><![CDATA[<p>После обновления до 2.2.2 в админской зоне стала появляться такая ошибка:</p>
+
+<p><code>
+Catchable fatal error: Argument 1 passed to xPDOObject::load() must be an instance of xPDO, instance of modX given in core/xpdo/om/xpdoobject.class.php on line 404
+</code></p>
+
+<p>Очень долго думал как решить. Оказалось суть в том, что при выходе из скриптанеправильно обрабатываются хендлеры повешенные на сессию. Что бы это исправить нужно добавить перед каждым выовом exit() в файлах /manager/min/index.php и /manager/min/lib/Minify.php вот такую строку:</p>
+
+<p><code>php
+@session_write_close();
+</code></p>
+
+<p>Возможно есть ещё места где может понадобиться такой &ldquo;хак&rdquo;.</p>
+]]></content>
+  </entry>
+  
+</feed>

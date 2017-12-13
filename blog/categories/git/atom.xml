@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Git | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/blog/categories/git/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Как поттратить свои изменения в git]]></title>
+    <link href="http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git/"/>
+    <updated>2016-10-06T14:26:29+07:00</updated>
+    <id>http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git</id>
+    <content type="html"><![CDATA[<p><strong>TL;DR</strong> При изменение коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в дургую ветку.</p>
+
+<p>Иначе, если вы полностью отмените сделанные в файле изменения, то он пропадет из дифа этого коммита, и при повторном мерже с ним ничего не произойдет.  Все будет так, как и было в целевой  ветке до мержа. <code>git merge</code> будет говорить Already up-to-date, но контент файлов будет разный в этих ветках.</p>
+
+<p>Простой пример из практики. Вы написали <code>console.log</code> в своей ветке, замержили в стейджинг, задеплоили, потестили, вспомнили, что был лишний код, пошли откатили этот <code>console.log</code>, замержили в стейджинг снова, все замержилось без конфликтов, но <code>console.log</code> в стейджинге остался, а у вас в ветке нет.</p>
+
+<p>Притом это работает в любую сторону на уровне файла. Удалили строку в файле –> замерижили куда-то –> вернули туже строку в файл поменяв коммит –> замержили снова. Там где меняли строка есть, там куда мержили нет. Получается, классическая ситуация: &ldquo;А у меня на ноутбуке все работает, сами ищите что не так!&rdquo;.</p>
+
+<h2>Погнали разбираться ну как так-то</h2>
+
+<p>Создадим репозиторий и в нем два файла:</p>
+
+<!-- more -->
+
+
+<p><code>bash
+/tmp/git_fuckup $ git init
+Initialized empty Git repository in /tmp/git_fuckup/.git/
+/tmp/git_fuckup $ touch correct.txt broken.txt
+/tmp/git_fuckup $ git add .
+/tmp/git_fuckup $ git commit -m "Init commit"
+[master (root-commit) d2b04c9] Init commit
+ 2 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 broken.txt
+ create mode 100644 correct.txt
+</code></p>
+
+<p>Создадим новую ветку, напишем что-нибудь в первый и второй файлы и замержим в мастер:</p>
+
+<p><code>bash
+/tmp/git_fuckup $ git commit -m "Init commit"
+[master (root-commit) d2b04c9] Init commit
+ 2 files changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 broken.txt
+ create mode 100644 correct.txt
+/tmp/git_fuckup[master] $ git checkout -b feature
+Switched to a new branch 'feature'
+/tmp/git_fuckup[feature] $ echo 'I need to be here!' &gt;&gt; correct.txt
+/tmp/git_fuckup[feature] $ echo 'I need to be here!' &gt;&gt; broken.txt
+/tmp/git_fuckup[feature] $ git add .
+/tmp/git_fuckup[feature] $ git commit -m "Texts added"
+[feature 551d298] Texts added
+ 2 files changed, 2 insertions(+)
+/tmp/git_fuckup[feature] $ git checkout master
+Switched to branch 'master'
+/tmp/git_fuckup[master] $ git merge feature
+Updating d2b04c9..551d298
+Fast-forward
+ broken.txt  | 1 +
+ correct.txt | 1 +
+ 2 files changed, 2 insertions(+)
+</code></p>
+
+<p>Прверяем что все ок:</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ cat correct.txt
+I need to be here!
+/tmp/git_fuckup[master] $ cat broken.txt
+I need to be here!
+/tmp/git_fuckup[master] $ git log --oneline
+551d298 Texts added
+d2b04c9 Init commit
+</code></p>
+
+<p>Переходим снова в фичу и возвращяем файл таким каким он был до коммита, при этом не создаем новый коммит, а меняем его. Для упрощения я откатил его через git, но разницы нет никакой, можно удалить строку в файле вручную.</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ git checkout feature
+Switched to branch 'feature'
+/tmp/git_fuckup[feature] $ git checkout HEAD~1 broken.txt
+/tmp/git_fuckup[feature] $ git commit --amend
+[feature a12625d] Texts added
+ Date: Wed Dec 13 23:09:53 2017 +0700
+ 1 file changed, 1 insertion(+)
+/tmp/git_fuckup[feature] $ cat broken.txt
+/tmp/git_fuckup[feature] $
+</code></p>
+
+<p>Файл пуст, все как планировали. Внимательный читатель уже должен заметить, что вместо <code>2 files changed, 2 insertions(+)</code> имеем <code>1 file changed, 1 insertion(+)</code>. Из дифа полностью пропал один файл, что логично, мы же полностью удалили то, что добавляли и теперь этих изменений не существует в новом коммите. Важное замечание, что при изменении коммита, всегда создается новый комит с новым хешем, это знание пригодтися позже.</p>
+
+<p>Мержим теперь в мастер:</p>
+
+<p><code>bash
+/tmp/git_fuckup[feature] $ cat broken.txt
+/tmp/git_fuckup[feature] $ git checkout master
+Switched to branch 'master'
+/tmp/git_fuckup[master] $ git merge feature
+Merge made by the 'recursive' strategy.
+</code></p>
+
+<p>Все смержилось, конфликтов нет. Казалось бы что все здорово, но:</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ cat correct.txt
+I need to be here!
+/tmp/git_fuckup[master] $ cat broken.txt
+I need to be here!
+/tmp/git_fuckup[master] $ git co feature
+/tmp/git_fuckup[feature] $ cat correct.txt
+I need to be here!
+/tmp/git_fuckup[feature] $ cat broken.txt
+/tmp/git_fuckup[feature] $
+</code></p>
+
+<p>В мастере строка есть, в фиче, нет. Чтобы понять, что просиходит, надо вспомнить, как происходит мерж веток.
+При мерже ветки A в B, находится ближайший родительский коммит Y между ними и затем дифы всех коммитов от Y до А поочередно применяются в ветку B.</p>
+
+<p>Посмотрим лог мастер ветки:</p>
+
+<p><code>bash
+/tmp/git_fuckup[master] $ g log --oneline --graph
+*   81825c7 Merge branch 'feature'
+|\
+| * a12625d Texts added
+* | 551d298 Texts added
+|/
+* d2b04c9 Init commit
+</code></p>
+
+<p>Посмотрим дифы коммитов, оригинального и измененного.</p>
+
+<p>```bash
+/tmp/git_fuckup[feature] $ g show a12625d
+commit a12625df8415a45f84a018532e295f6c8421238f
+Author: Andreww8xx8 <a href="&#109;&#x61;&#105;&#x6c;&#116;&#111;&#x3a;&#97;&#118;&#x6b;&#x40;&#56;&#x78;&#x78;&#x38;&#x2e;&#x72;&#x75;">&#97;&#118;&#107;&#64;&#56;&#x78;&#120;&#56;&#46;&#114;&#117;</a>
+Date:   Wed Dec 13 23:09:53 2017 +0700</p>
+
+<pre><code>Texts added
+</code></pre>
+
+<p>diff &mdash;git a/correct.txt b/correct.txt
+index e69de29..c20dfcd 100644
+&mdash;&ndash; a/correct.txt
++++ b/correct.txt
+@@ -0,0 +1 @@
++I need to be here!
+<code>
+</code>bash
+/tmp/git_fuckup[feature] $ g show 551d298
+commit 551d2989dc60290122d7853c3373b0e0e09757ce
+Author: Andreww8xx8 <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#58;&#97;&#x76;&#107;&#64;&#56;&#x78;&#120;&#x38;&#46;&#x72;&#x75;">&#x61;&#x76;&#x6b;&#64;&#x38;&#x78;&#120;&#56;&#46;&#114;&#117;</a>
+Date:   Wed Dec 13 23:09:53 2017 +0700</p>
+
+<pre><code>Texts added
+</code></pre>
+
+<p>diff &mdash;git a/broken.txt b/broken.txt
+index e69de29..c20dfcd 100644
+&mdash;&ndash; a/broken.txt
++++ b/broken.txt
+@@ -0,0 +1 @@
++I need to be here!
+diff &mdash;git a/correct.txt b/correct.txt
+index e69de29..c20dfcd 100644
+&mdash;&ndash; a/correct.txt
++++ b/correct.txt
+@@ -0,0 +1 @@
++I need to be here!
+/tmp/git_fuckup[feature] ±
+```</p>
+
+<p>При втором мерже <code>git</code> пытается накатить диф коммита <code>a12625d</code>. В нем только одно изменение в файле <code>correct.txt</code> и оно не конфликтует с тем, что есть в фаловой системе после коммита <code>551d298</code>, а про файл <code>broken.txt</code> в дифе <code>a12625d</code> ничего нет, по этому он тоже останется таким как был в <code>551d298</code>.</p>
+
+<p>Все комнады чтобы упростить копипаст, если вы вдруг заходтите воспроизвести ситуацию сами есть <a href="https://gist.github.com/Andrew8xx8/58319104b9b17e136f0ce7bbdabad1c6">здесь</a>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Минус-мерж]]></title>
+    <link href="http://8xx8.ru/blog/2015/02/17/minus-merge/"/>
+    <updated>2015-02-17T23:49:58+07:00</updated>
+    <id>http://8xx8.ru/blog/2015/02/17/minus-merge</id>
+    <content type="html"><![CDATA[<p>Большинство скорее всего знакомы с &ldquo;магическим&rdquo; аргументом <code>-</code> для комнады <code>cd</code> в консоли. Это переход в предыдущую выбранную дирректорию.</p>
+
+<p>Работает так:</p>
+
+<p><code>bash
+8xx8@mac ~/git-minus[master] $ cd /
+8xx8@mac / $ cd -
+8xx8@mac ~/git-minus[master] $
+</code></p>
+
+<p>Некоторые знают о том, что git поддерживает похожее поведение при смене ветки:</p>
+
+<p><code>bash
+8xx8@mac ~/git-minus[master] $ git co feature
+Switched to branch 'feature'
+8xx8@mac ~/git-minus[feature] $ git co -
+Switched to branch 'master'
+8xx8@mac ~/git-minus[master] $ git co -
+Switched to branch 'feature'
+8xx8@mac ~/git-minus[feature] $
+</code></p>
+
+<p>Здесь я использовал алиас <code>co</code> для <code>checkout</code>. Вообще про алиасы у меня была отдельная статья.</p>
+
+<p>В общем все понятно и логично. Но мало кто знает что аргумент <code>-</code> можно передавать как аргумент к merge.  Давайте посмотрим что из этого выходит.</p>
+
+<!-- more -->
+
+
+<p>На этот варанант я натолкнулся совсем случайно. Мы используем git-flow и названия веток у нас, как результат, длинные. Сливать свои изменения в staging приходится достаточно часто, вот и я подумал, а как так сделать, что бы поменьше делать.</p>
+
+<p><code>bash
+8xx8@mac git-minus[feature/coll_stuff] $ git commit -m "second"
+[feature 8f65d91] second
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+  create mode 100644 2
+8xx8@mac ~/git-minus[feature/coll_stuff] $ git co staging
+Switched to branch 'staging'
+8xx8@mac ~/git-minus[staging] $ g merge -
+Updating a2c0a4d..8f65d91
+Fast-forward
+ 2 | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 2
+8xx8@mac ~/git-minus[staging] $
+</code></p>
+
+<p>PROFIT!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Будь ленив и быстр. Git]]></title>
+    <link href="http://8xx8.ru/blog/2013/11/12/bud-lieniv-i-bystr-git/"/>
+    <updated>2013-11-12T12:32:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/11/12/bud-lieniv-i-bystr-git</id>
+    <content type="html"><![CDATA[<p><code>
+cat ~/.zsh_history | wc -c
+431403
+</code></p>
+
+<p>Столько символов я использовал, набирая различные команды в консоли.</p>
+
+<p>Не знаю как вам, а я думаю, это много. Даже если учесть, что половину из этого занимают
+пути к файлам и части, дополненные автокомплитом, это все равно много. Статистика взята
+примерно за 4 месяца, и если выкинуть выходные и прикинуть, получается около 6000 знаков в
+день. Пара страниц формата А4. Большая часть этого труда – это  рутинные команды или
+последовательности типичных действий.</p>
+
+<p>Как ни странно, но это одна из немногих ситуаций в жизни, когда можно делать минимум, а
+результата получать максимум.</p>
+
+<!-- more -->
+
+
+<p>Помогут в этом знания полезных программ, приготовленные в функции и автодополнения,
+поданные под нужным соусом из псевдонимов. Но путь ленивых и быстрых не для новичков.
+Существует опасность получить «алиас головного мозга» или «расстройство
+отсутствия плагина», совершено забыв о том, что где-то в недрах вашего блюда есть то,
+что имеет совершенно другую начинку.</p>
+
+<p>Погружение на темную сторону можно разделить на несколько частей. Согласно сложности
+реализации и абстрагированности от реальной жизни.</p>
+
+<h2>Git</h2>
+
+<p>Не секрет, что <code>git</code> обладает продвинутым и гибким интерфейсом командной строки, но эта
+гибкость достигается дорогой ценой, а именно многословностью. В результате для
+выполнения некоторых простых действий требуется вводить немалое количество слов в
+командной строке.</p>
+
+<p>На этапе знакомства с системой это даже хорошо, помогает вникнуть. Но
+в повседневной работе набирать раз за разом небольшой эпос в командной строке,
+когда, например, нужно посмотреть только diff определенного коммита, тяжело.</p>
+
+<h3>Полезные опции</h3>
+
+<p>Эти мелочи могут выручить всегда, даже если вашего <code>dotfiles</code> не будет рядом.</p>
+
+<p><code>git log --oneline</code> — Вывести лог в одну строку.</p>
+
+<p><code>git add -u</code> — Добавить в stage все, кроме файлов, находящихся вне git.</p>
+
+<p><code>git status -s</code> — Прагматичный статус без лишней информации.</p>
+
+<p><code>git branch --merged</code> — Ветки слитые в текущую.</p>
+
+<p><code>git branch --no-merged</code> — Ветки не слитые в текущую.</p>
+
+<h3>Базовые сокращения</h3>
+
+<p>```
+cp = cherry-pick
+st = status -s
+cl = clone
+ci = commit
+co = checkout
+br = branch</p>
+
+<p>sl = stash list
+sa = stash apply
+ss = stash save</p>
+
+<p>```</p>
+
+<h3>Diff</h3>
+
+<p>Изменения, приготовленные к коммиту (staged)</p>
+
+<p><code>
+dc = diff --cached
+</code></p>
+
+<p>Изменения в последнем коммите</p>
+
+<p><code>
+dlc = diff --cached HEAD^
+</code></p>
+
+<p>Изменения в определенном коммите (<code>git dr dcee010</code>)</p>
+
+<p><code>
+dr  = "!f() { git diff "$1"^.."$1"; }; f"
+</code></p>
+
+<h3>Push / Pull</h3>
+
+<p>Применение изменений из векти так, чтобы все наши коммиты шли после</p>
+
+<p><code>
+up = pull --rebase
+</code></p>
+
+<p>Отправление только текущей ветки</p>
+
+<p><code>
+put = push origin HEAD
+</code></p>
+
+<h3>Коммит</h3>
+
+<p>Отмена последнего коммита с сохранением состояния stage</p>
+
+<p><code>
+undo = reset --soft HEAD^
+</code></p>
+
+<p>Добавить все файлы в stage к последнему коммиту, не котрывая редактор
+с сообщением</p>
+
+<p><code>
+aps = commit --amend -C HEAD
+</code></p>
+
+<p>Определить нахождение коммита</p>
+
+<p><code>
+where = branch -av --contains
+</code></p>
+
+<h3>Красивый лог</h3>
+
+<p><code>
+lg = log --pretty=format:\"%h %Cblue%ar %Cgreen%an%Creset: %s %Cred%d\"
+ll = log -10 --pretty=format:\"%h %Cblue%ar %Cgreen%an%Creset: %s %Cred%d\"
+gr = log --graph --pretty=format:\"%Cred%h %Cblue%ar%Creset %Cgreen%an%Creset %s%Cred%d\"o
+</code></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Все или не все? (git push)]]></title>
+    <link href="http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie/"/>
+    <updated>2013-06-12T13:45:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie</id>
+    <content type="html"><![CDATA[<p>Часто ли вы задумывались над тем, какие ветки будут отправлены в
+удалённый репозиторий при выполнении команды <code>push</code>?</p>
+
+<p>А поможет ли вам задуматься над этим такая картина?</p>
+
+<p><img src="/images/content/force-push/1.png" title="[]" ></p>
+
+<p>Наверное, поможет, особенно если увидеть это в ночь перед релизом. А
+началось-то все с того, что хотели фичу красиво слить через rebase.</p>
+
+<p>Так давайте разберёмся, что пошло не так.</p>
+
+<!-- more -->
+
+
+<p>Гит пушит всё. Да, вы не ослышались. По умолчанию это так и есть. Беседы
+о том, что поведение по умолчанию не безопасное оставим за кадром
+и найдём решение.</p>
+
+<p>```
+$ git push &mdash;help</p>
+
+<pre><code>   git push [--all | --mirror | --tags] [-n | --dry-run]
+</code></pre>
+
+<p>[&mdash;receive-pack=&lt;git-receive-pack>]</p>
+
+<pre><code>              [--repo=&lt;repository&gt;] [-f | --force] [--prune] [-v |
+</code></pre>
+
+<p>&mdash;verbose] [-u | &mdash;set-upstream]</p>
+
+<pre><code>              [&lt;repository&gt; [&lt;refspec&gt;...]]
+</code></pre>
+
+<p>```</p>
+
+<p>Как видно из документации, мы можем пропустить указание назначения(repository) и refspec (конструкция вида ЛОКАЛЬНАЯ<em>ВЕТКА[:][УДАЛЁННАЯ</em>ВЕТКА]), по умолчанию в качестве назначения будет использовано origin, а в качестве refspec будет использована одна из стратегий определённых в настройке <code>push.default</code>. Она может принимать такие значения:</p>
+
+<ul>
+<li><code>nothing</code> &ndash; не пушить ничего</li>
+<li><code>matching</code> &ndash; пушить все ветки, названия которых в локальном
+репозитории
+совпадают с названиями в удалённом репозитории.
+<em>Это как раз та опция, которая используется, если ничего не задано</em></li>
+<li><code>upstream</code> &ndash; пушить только текущую ветку в ту ветку на удалённом
+репозитории, которая прописана в конфиге как upstream</li>
+<li><code>tracking</code> &ndash; устаревший синоним для <code>upstream</code></li>
+<li><code>current</code> &ndash; пушить только текущую ветку в ту ветку на удалённом
+репозитории с которой совпадёт имя</li>
+</ul>
+
+
+<p>Самый лучший способ решить проблему – это указывать repository и refspec всегда при выполнении команд <code>push</code>/<code>pull</code>.</p>
+
+<p>Либо полностью:</p>
+
+<p><code>
+git push origin branch:branch
+</code></p>
+
+<p>Либо в качестве refspec использовать HEAD:</p>
+
+<p><code>
+git push origin HEAD
+</code></p>
+
+<p>В таком случае текущая ветка будет запушена в ветку с таким же названием
+в удалённом репозитории.</p>
+
+<p>Можно сделать псевдоним для команды, чтобы было удобнее</p>
+
+<p><code>
+git config --global alias.put 'git push origin HEAD'
+</code></p>
+
+<p>Есть и другой способ. Изменить поведение по умолчанию при пуше. Но у
+такого подхода есть существенный минус. Как минимум можно привыкнуть к
+тому, что система ведёт себя по другому и в том месте, где она настроена
+не так как у вас или забыв при смене системы настроить её, можно опять
+попасть в ситуацию как на картинке в начале статьи.</p>
+
+<p><code>bash
+git config --global push.default upstream
+</code></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Git: Идеальное преступление]]></title>
+    <link href="http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie/"/>
+    <updated>2013-03-14T12:09:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie</id>
+    <content type="html"><![CDATA[<p>В компании, в которой я  работаю в настоящее время, мы используем при
+разработке довольно распространённую <a href="http://nvie.com/posts/a-successful-git-branching-model/">модель ветвления</a>, а в качестве
+инструмента для стандартизации работы по этой схеме <a href="https://github.com/nvie/gitflow">git-flow</a>. Так же мы
+дополнили эту схему ещё одной веткой &mdash; <code>staging</code>. Это временная ветка, в
+которую сливаются <code>feature branches</code>, и на основе неё делаются
+промежуточные релизы на тестовый сервер. Естественно, всё, что
+происходит в этой ветке, нужно для предварительного просмотра и
+тестирования выполненных задач и никак не должно попадать ни в основную
+ветку разработки, ни в master, то есть в итоговый релиз. В принципе,
+схема работы достаточно удачная. Она упрощает взаимодействие и работу
+большой команды с разным навыком работы с git, и нештатные ситуации
+случаются достаточно редко, но зато, если случаются, то это запоминается
+надолго.</p>
+
+<!-- more -->
+
+
+<p>Началось всё с того, что мы стали замечать, что в <code>master</code> или в <code>develop</code>
+ветку начинают попадать коммиты из ветки <code>staging</code>. Самые распространённые
+из них &mdash; это мержи веток с задачами. Первый раз решили, что кто-то по
+невнимательности примержил стейджинг в ветку с задачей и потом вылил,
+разбираться точно как и кто не стали, просто всем ещё раз рассказали как
+нужно вести разработку и посоветовали внимательнее следить за тем, что
+они делают.</p>
+
+<p>Затем история повторилась, но уже в другой команде с другими людьми.
+Стали копать, выяснили, что и раньше такое было, просто никто не замечал
+лишних коммитов в истории, потому что в принципе код работал, тесты
+проходили и ладно.</p>
+
+<p>Разгадка проста и понятна сразу, кто-то примержил staging в ветку со
+своей задачей, а потом через некоторое время, когда она вышла в релиз,
+все нежелательные коммиты и попали в <code>develop</code>, а  потом &mdash; в <code>master</code>. Но
+как? Если первый раз нам удалось найти злополучный коммит вида <code>Merge
+branch staging into 'feature/fourth'</code>, то в последний раз во всей истории
+всё было чисто. Каждый участник команды говорил, что он всё делал по
+инструкции и по модели ветвления.</p>
+
+<p>Те кто знаком с тем, как происходит мерж веток в git, наверное, уже
+догадались почему так. А остальным я продемонстрирую на примере.</p>
+
+<p>Мы имеем новый репозиторий с несколькими коммитами в <code>master</code> ветку и
+одним в <code>develop</code></p>
+
+<p><img src="/images/content/gitfuckup/1.png" title="[]" ></p>
+
+<p>Далее создадим новую задачу(<code>first</code>), закоммитим в неё первый коммит и
+опубликуем.</p>
+
+<p><code>
+$ git flow feature start first
+$ touch first
+$ git add first
+$ git commit -m "First feature commit"
+$ git flow feature publish first
+</code></p>
+
+<p>То же самое сделаем для <code>second</code></p>
+
+<p><code>
+$ git flow feature start second
+$ touch second
+$ git add second
+$ git commit -m "Second feature commit"
+$ git flow feature publish second
+</code></p>
+
+<p><img src="/images/content/gitfuckup/2.png" title="[]" ></p>
+
+<p>Теперь менеджер попросил нас вылить вторую задачу на тестовый сервер:</p>
+
+<p><code>
+$ git checkout -b staging
+$ git merge feature feature/second
+$ git merge feature/second
+$ git push --set-upstream origin staging
+</code></p>
+
+<p>Но, предположим, у нас произошла ошибка в приложении, связанная только с
+тестовым сервером и другого программиста попросили её исправить:</p>
+
+<p><code>
+$ touch staging-fix
+$ git add staging-fix
+$ git commit -m "Staging fixed"
+$ git push
+</code></p>
+
+<p><img src="/images/content/gitfuckup/3.png" title="[]" ></p>
+
+<p>Далее нас попросили вылить на тестовый сервер первую задачу. Для этого
+мы перешли в <code>staging</code>, обновили его и влили в него первую задачу:</p>
+
+<p><code>
+$ git checkout staging
+$ git pull --rebase origin staging
+From github.com:Andrew8xx8/try_git
+ * branch            staging    -&gt; FETCH_HEAD
+Current branch staging is up to date.
+$ git merge feature/first
+$ git push
+</code></p>
+
+<p><img src="/images/content/gitfuckup/4.png" title="[]" ></p>
+
+<p>Пока всё верно. От ветки <code>develop</code> сделаны две задачи. В ветку <code>staging</code> влиты обе ветки с задачами и есть ещё один коммит нужный только для неё.</p>
+
+<p>Мы возвращаемся к разработке второй задачи, но нас кто-то отвлёк и случайно получается, что &ldquo;на автомате из истории&rdquo; мы вполняем такую последовательность комманд:</p>
+
+<p><code>
+git checkout feature/first
+git pull --rebase origin staging
+</code></p>
+
+<p>И ничего вроде бы страшного не произошло, в дальнейшей рутине мы можем ничего не заметить. Так называемый мерж коммит не создался, потому что мерж прошёл в режиме <code>fast-forward</code>.</p>
+
+<p>История, если бы в ней не было коммита <code>Staging fixed</code>,  тоже сильно не
+изменилась.</p>
+
+<p><code>
+$ git log --oneline
+87bb177 Merge branch 'feature/first' into staging
+dc4b6d6 Staging fixed
+56351b4 Second feature commit
+7b843ef First feature commit
+f664597 Commit in develop
+dfcf2d5 Removed all the cats
+a0184dc Add all the octocat txt files
+1aad731 Added cute octocat story
+</code></p>
+
+<p>Но кто смотрит историю после перехода в ветку? Поэтому вы продолжаете
+работу. Делаем ещё один коммит в первую задачу (хотя в реале их может
+быть гораздо больше) и публикуем её.</p>
+
+<p><code>
+$ touch first-finish
+$ git add first-finish
+$ git commit -m "First feature finished"
+$ git push
+</code></p>
+
+<p>Никаких подозрительных сообщений в консоли. Всё вроде бы нормально.
+Поэтому мы продолжаем спокойно спать по ночам, а остальная комманда
+работать над проектом, потому что по сути только наша ветка содержит
+сейчас стейджинг.</p>
+
+<p><img src="/images/content/gitfuckup/5.png" title="[]" ></p>
+
+<p>Хотя уже по графику видно, что произошёл некоторый факап, но когда веток
+и людей много этого незаметно, да и кто смотрит графики.</p>
+
+<p>Затем нас просят выпустить первую задачу и сделать релиз, что мы и
+делаем:</p>
+
+<p><code>
+$ git flow feature finish first
+$ git push
+$ git flow release start v1
+$ git flow release finish v1
+$ git push
+</code></p>
+
+<p><img src="/images/content/gitfuckup/6.png" title="[]" ></p>
+
+<p>Ну вот и всё. Полный фарш. В релиз попало то, что было в <code>staging</code>. В истории всё чисто с точки зрения того, что нет мерж коммита:</p>
+
+<p><code>
+$ git log --oneline
+5db05f9 Merge branch 'release/v1'
+ffb5ee5 Merge branch 'feature/first' into develop
+d93f812 First feature finished
+87bb177 Merge branch 'feature/first' into staging
+dc4b6d6 Staging fixed
+56351b4 Second feature commit
+7b843ef First feature commit
+f664597 Commit in develop
+dfcf2d5 Removed all the cats
+a0184dc Add all the octocat txt files
+1aad731 Added cute octocat story
+</code></p>
+
+<p>Если посмотреть reflog, то вот те строчки, которые были сгенерированы во
+время выполнения ошибочной команды:</p>
+
+<p><code>
+87bb177 HEAD@{6}: rebase finished: returning to refs/heads/feature/first
+87bb177 HEAD@{7}: checkout: moving from feature/first to 87bb1774e8d6555a06707a03ef1f0f9636206317^0
+7b843ef HEAD@{8}: checkout: moving from feature/second to feature/first
+</code></p>
+
+<p>Тоже ничего необычного.</p>
+
+<p>Причина такого поведения &mdash; это fast-forward мерж. При таком слиянии в
+случае, если это возможно, указатель ветки просто перемещается на то же
+место, куда указывает ветка, которая вливается:</p>
+
+<p><code>
+git checkout develop
+git merge feature
+</code></p>
+
+<p><img src="http://8xx8.ru/git-kmb/images/mr1.png" alt="" /></p>
+
+<p>Как исправить получившуюся ситуацию? Никак. Можно попробовать найти
+ветку, в которую влит <code>staging</code> и попробовать откатить её слияние в
+<code>develop</code>,
+а также удалить коммиты с релизом и почистить все ветки, но это долго и
+сложно, особенно если веток с задачами много.</p>
+
+<p>Что делать чтобы такое не произошло?</p>
+
+<p>Что делать, чтобы такое не произошло?</p>
+
+<ol>
+<li>Внимательно следить за исполняемыми командами.</li>
+<li>Если используется git-flow, то использовать его команды для
+обновления и публикации веток.</li>
+<li>Использовать либо полный синтаксис команды <code>git push/pull</code>,  либо
+полностью сокращённый синтаксис без указания веток. Потому что в
+ситуации из приведённого примера не указывается, в какую ветку слить
+изменения, поэтому так и получилось, что информация из <code>staging</code> попала в
+ветку с задачей.</li>
+</ol>
+
+]]></content>
+  </entry>
+  
+</feed>

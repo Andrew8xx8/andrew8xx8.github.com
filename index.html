@@ -1,1 +1,828 @@
-My Octopress Page is coming soon &hellip;
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>8xx8 (Андрей Кулаков)</title>
+  <meta name="author" content="Andrey Kulakov (8xx8)">
+
+  
+  <meta name="description" content="TL;DR При изменение коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в дургую ветку. Иначе, если вы полностью &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://8xx8.ru">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="8xx8 (Андрей Кулаков)" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href="http://fonts.googleapis.com/css?family=PT+Sans:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+
+<meta name='yandex-verification' content='6b1590575f348e84' />
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">8xx8 (Андрей Кулаков)</a></h1>
+  
+    <h2>Творческая мастерская</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:8xx8.ru" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Блог</a></li>
+  <li><a href="/blog/archives">Архив</a></li>
+  <li><a href="/contacts">Контакты</a></li>
+</ul>
+
+</nav>
+  <div id="main">
+    <div id="content">
+      <div class="blog-index">
+  
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2016/10/06/how-to-waste-your-changes-in-git/">Как поттратить свои изменения в Git</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-10-06T14:26:29+07:00" pubdate data-updated="true">Oct 6<span>th</span>, 2016</time>
+        
+           | <a href="/blog/2016/10/06/how-to-waste-your-changes-in-git/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p><strong>TL;DR</strong> При изменение коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в дургую ветку.</p>
+
+<p>Иначе, если вы полностью отмените сделанные в файле изменения, то он пропадет из дифа этого коммита, и при повторном мерже с ним ничего не произойдет.  Все будет так, как и было в целевой  ветке до мержа. <code>git merge</code> будет говорить Already up-to-date, но контент файлов будет разный в этих ветках.</p>
+
+<p>Простой пример из практики. Вы написали <code>console.log</code> в своей ветке, замержили в стейджинг, задеплоили, потестили, вспомнили, что был лишний код, пошли откатили этот <code>console.log</code>, замержили в стейджинг снова, все замержилось без конфликтов, но <code>console.log</code> в стейджинге остался, а у вас в ветке нет.</p>
+
+<p>Притом это работает в любую сторону на уровне файла. Удалили строку в файле –> замерижили куда-то –> вернули туже строку в файл поменяв коммит –> замержили снова. Там где меняли строка есть, там куда мержили нет. Получается, классическая ситуация: &ldquo;А у меня на ноутбуке все работает, сами ищите что не так!&rdquo;.</p>
+
+<h2>Погнали разбираться ну как так-то</h2>
+
+<p>Создадим репозиторий и в нем два файла:</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2016/10/06/how-to-waste-your-changes-in-git/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2015/02/17/minus-merge/">Минус-мерж</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2015-02-17T23:49:58+07:00" pubdate data-updated="true">Feb 17<span>th</span>, 2015</time>
+        
+           | <a href="/blog/2015/02/17/minus-merge/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2015/02/17/minus-merge/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Большинство скорее всего знакомы с &ldquo;магическим&rdquo; аргументом <code>-</code> для комнады <code>cd</code> в консоли. Это переход в предыдущую выбранную дирректорию.</p>
+
+<p>Работает так:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span><span class="nb">cd</span> /
+</span><span class='line'>8xx8@mac / <span class="nv">$ </span><span class="nb">cd</span> -
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Некоторые знают о том, что git поддерживает похожее поведение при смене ветки:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git co feature
+</span><span class='line'>Switched to branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git co -
+</span><span class='line'>Switched to branch <span class="s1">&#39;master&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git co -
+</span><span class='line'>Switched to branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>feature<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Здесь я использовал алиас <code>co</code> для <code>checkout</code>. Вообще про алиасы у меня была отдельная статья.</p>
+
+<p>В общем все понятно и логично. Но мало кто знает что аргумент <code>-</code> можно передавать как аргумент к merge.  Давайте посмотрим что из этого выходит.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2015/02/17/minus-merge/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/24/vim-ag/">Поиск по проекту с помощью Ag</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-24T12:34:00+07:00" pubdate data-updated="true">Mar 24<span>th</span>, 2014</time>
+        
+           | <a href="/blog/2014/03/24/vim-ag/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2014/03/24/vim-ag/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Я давно пользуюсь <a href="https://github.com/ggreer/the_silver_searcher">The Silver Searcher</a> как заменой стандартному <code>grep</code>. О достоинствах такого выбора можно посмотреть на странице проекта.</p>
+
+<p>Для своего любимого редактора я долгое время использовал плагин <a href="https://github.com/mileszs/ack.vim">Ack</a>. Он обладает рядом багов, но в целом пользоваться можно.</p>
+
+<p>Недавно я наткнулся на его форк <a href="https://github.com/rking/ag.vim">Ag</a>. Зацепило в нем две вещи:</p>
+
+<ul>
+<li>строка поиска сохраняется в регистр поиска;</li>
+<li>наличие комманды AgFromSearch, которая позволяет искать то, чтобыло в регистре поиска.</li>
+</ul>
+
+
+<p>Эти факторы позитивно влияют на продуктивность.</p>
+
+<p>В найденом файле все вхождения будут подсвечены (ну если включен <code>hlsearch</code>), и по нему сразу можно будет перемещаться с помощью <code>n</code> или <code>N</code>.</p>
+
+<p>Если нужно поискать слово из текущего файла, нажимаем на этом слове <code>*</code> и выполнив <code>:AgFromSearch</code> без параметров сразу получаем результат.</p>
+
+<p>Так же интересной показалась команда  <code>:AgFile</code>, для поиска файла по имени.</p>
+
+<p>Ну и как бонус, две буквы набирать проще трех.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/03/24/vim-ag/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/03/18/digital-bookmark/">Цифровая закладка</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-03-18T21:59:00+07:00" pubdate data-updated="true">Mar 18<span>th</span>, 2014</time>
+        
+           | <a href="/blog/2014/03/18/digital-bookmark/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2014/03/18/digital-bookmark/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Несколько дней назад во время обеда у меня произошел такой диалог с
+коллегой:</p>
+
+<p>— Ты дочитал книгу про Vim? </br>
+— Нет. </br>
+— А идеальный питч? </br>
+— Нет. Только половину. </br>
+— Эх, ну ты и читатель! </br></p>
+
+<p>И тут я задумался. Ведь и правда, читаю я нерегулярно, медленно и хватаюсь за
+все подряд. Иногда у меня просто вылетает из головы мысль о том, что нужно взять
+книгу и почитать. А бывают случаи, когда приходится себя заставлять прочесть даже
+что-то увлекательное. Причем с этим есть обратная сторона, если
+книга мне очень интересна, то я, забыв про все, читаю ее днями на пролет.</p>
+
+<p>Такое положение дел меня не устраивает.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2014/03/18/digital-bookmark/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/11/12/bud-lieniv-i-bystr-git/">Будь ленив и быстр. Git</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-11-12T12:32:00+07:00" pubdate data-updated="true">Nov 12<span>th</span>, 2013</time>
+        
+           | <a href="/blog/2013/11/12/bud-lieniv-i-bystr-git/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2013/11/12/bud-lieniv-i-bystr-git/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cat ~/.zsh_history | wc -c
+</span><span class='line'>431403</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Столько символов я использовал, набирая различные команды в консоли.</p>
+
+<p>Не знаю как вам, а я думаю, это много. Даже если учесть, что половину из этого занимают
+пути к файлам и части, дополненные автокомплитом, это все равно много. Статистика взята
+примерно за 4 месяца, и если выкинуть выходные и прикинуть, получается около 6000 знаков в
+день. Пара страниц формата А4. Большая часть этого труда – это  рутинные команды или
+последовательности типичных действий.</p>
+
+<p>Как ни странно, но это одна из немногих ситуаций в жизни, когда можно делать минимум, а
+результата получать максимум.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/11/12/bud-lieniv-i-bystr-git/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/06/12/git-vsie-ili-nie-vsie/">Все или не все? (Git Push)</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-06-12T13:45:00+07:00" pubdate data-updated="true">Jun 12<span>th</span>, 2013</time>
+        
+           | <a href="/blog/2013/06/12/git-vsie-ili-nie-vsie/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Часто ли вы задумывались над тем, какие ветки будут отправлены в
+удалённый репозиторий при выполнении команды <code>push</code>?</p>
+
+<p>А поможет ли вам задуматься над этим такая картина?</p>
+
+<p><img src="/images/content/force-push/1.png" title="[]" ></p>
+
+<p>Наверное, поможет, особенно если увидеть это в ночь перед релизом. А
+началось-то все с того, что хотели фичу красиво слить через rebase.</p>
+
+<p>Так давайте разберёмся, что пошло не так.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/06/12/git-vsie-ili-nie-vsie/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/03/14/git-idiealnoie-priestuplieniie/">Git: Идеальное преступление</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-03-14T12:09:00+07:00" pubdate data-updated="true">Mar 14<span>th</span>, 2013</time>
+        
+           | <a href="/blog/2013/03/14/git-idiealnoie-priestuplieniie/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>В компании, в которой я  работаю в настоящее время, мы используем при
+разработке довольно распространённую <a href="http://nvie.com/posts/a-successful-git-branching-model/">модель ветвления</a>, а в качестве
+инструмента для стандартизации работы по этой схеме <a href="https://github.com/nvie/gitflow">git-flow</a>. Так же мы
+дополнили эту схему ещё одной веткой &mdash; <code>staging</code>. Это временная ветка, в
+которую сливаются <code>feature branches</code>, и на основе неё делаются
+промежуточные релизы на тестовый сервер. Естественно, всё, что
+происходит в этой ветке, нужно для предварительного просмотра и
+тестирования выполненных задач и никак не должно попадать ни в основную
+ветку разработки, ни в master, то есть в итоговый релиз. В принципе,
+схема работы достаточно удачная. Она упрощает взаимодействие и работу
+большой команды с разным навыком работы с git, и нештатные ситуации
+случаются достаточно редко, но зато, если случаются, то это запоминается
+надолго.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/03/14/git-idiealnoie-priestuplieniie/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii/">Keydown - как я делаю презентации</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-11T14:57:00+07:00" pubdate data-updated="true">Jan 11<span>th</span>, 2013</time>
+        
+           | <a href="/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Я очень люблю, если каким-либо инструментом можно по максимуму управлять с клавиатуры. Так же я очень люблю автоматизацию, <code>Markdown</code> и просто красивые вещи. Я не люблю программы с перегруженным интерфейсом и много тыкать мышью для того, чтобы выполнить простешее действие.</p>
+
+<p>Всё что мне нужно для презентации это — каскад слайдов и иметь возможность переходить по ним в разных направлениях, чтобы текст с них хорошо читался и выглядело красиво. Я ленив. Я хочу просто набрать текст, нажать кнопочку и чтобы БАХ, и мой текст превратися в презентацию размещённую в интернете и готовую к показу.</p>
+
+<p>Мечта? Нет. Реальность.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2013/01/09/dorojnie-dokladatory/">Дорожные докладаторы. От @Ulway до Waytag.ru</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2013-01-09T14:21:00+07:00" pubdate data-updated="true">Jan 9<span>th</span>, 2013</time>
+        
+           | <a href="/blog/2013/01/09/dorojnie-dokladatory/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2013/01/09/dorojnie-dokladatory/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Сейчас стало модным делать стартапы. У каждого второго разработчика есть свой. А в Rails сообществе ­— у каждого первого, наверное. И чтобы оставаться в тренде я тоже решил принять участие в разработке одного интересного сервиса.</p>
+
+<p>Небольшая история о том, как я докатился до такой жизни.</p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2013/01/09/dorojnie-dokladatory/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2012/12/21/plaghin-link-dlia-jekyll/">Плагин Link для Jekyll</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2012-12-21T01:19:00+07:00" pubdate data-updated="true">Dec 21<span>st</span>, 2012</time>
+        
+           | <a href="/blog/2012/12/21/plaghin-link-dlia-jekyll/#disqus_thread"
+             data-disqus-identifier="http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll/">Comments</a>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>Нужно было для одного статического сайта сделать так, чтобы все ссылки
+которые ведут на текущую открытую страницу помечались классом <code>current</code>.
+Для того что бы пользователь по структуре меню мог определить, где он
+находится.</p>
+
+<p>Я написал плагин для этого. <a href="https://github.com/Andrew8xx8/jekyll-link">https://github.com/Andrew8xx8/jekyll-link</a></p>
+
+</div>
+  
+  
+    <footer>
+      <a rel="full-article" href="/blog/2012/12/21/plaghin-link-dlia-jekyll/">далее &rarr;</a>
+    </footer>
+  
+
+
+    </article>
+  
+  <div class="pagination">
+    
+      <a class="prev" href="/blog/page/2/">&larr; Older</a>
+    
+    <a href="/blog/archives">Blog Archives</a>
+    
+  </div>
+</div>
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2016/10/06/how-to-waste-your-changes-in-git/">Как поттратить свои изменения в Git</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2015/02/17/minus-merge/">Минус-мерж</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/24/vim-ag/">Поиск по проекту с помощью Ag</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/03/18/digital-bookmark/">Цифровая закладка</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/11/12/bud-lieniv-i-bystr-git/">Будь ленив и быстр. Git</a>
+      </li>
+    
+  </ul>
+</section>
+<section>
+  <h1>По категориям</h1>
+    <ul id="category-list"><li><a href='/blog/categories/git'>Git (5)</a></li><li><a href='/blog/categories/life'>Life (4)</a></li><li><a href='/blog/categories/php'>PHP (6)</a></li><li><a href='/blog/categories/ruby'>Ruby (2)</a></li><li><a href='/blog/categories/vim'>vim (1)</a></li></ul>
+</section>
+<section>
+  <h1>По тегам</h1>
+    <div id="tag-cloud"><a href='/tags/-vimrc' style='font-size: 115.0%'>.vimrc(1)</a> <a href='/tags/ag' style='font-size: 115.0%'>ag(1)</a> <a href='/tags/aliases' style='font-size: 115.0%'>aliases(1)</a> <a href='/tags/amend' style='font-size: 115.0%'>amend(1)</a> <a href='/tags/block-manager' style='font-size: 115.0%'>block manager(1)</a> <a href='/tags/cd' style='font-size: 115.0%'>cd(1)</a> <a href='/tags/cli' style='font-size: 160.0%'>cli(4)</a> <a href='/tags/cs-cart' style='font-size: 145.0%'>cs-cart(3)</a> <a href='/tags/fast-forward' style='font-size: 115.0%'>fast-forward(1)</a> <a href='/tags/git-checkout' style='font-size: 115.0%'>git checkout(1)</a> <a href='/tags/git-commit' style='font-size: 115.0%'>git commit(1)</a> <a href='/tags/git-merge' style='font-size: 130.0%'>git merge(2)</a> <a href='/tags/git-push' style='font-size: 130.0%'>git push(2)</a> <a href='/tags/grep' style='font-size: 115.0%'>grep(1)</a> <a href='/tags/jekyll' style='font-size: 115.0%'>jekyll(1)</a> <a href='/tags/links' style='font-size: 115.0%'>links(1)</a> <a href='/tags/markdown' style='font-size: 115.0%'>markdown(1)</a> <a href='/tags/modx' style='font-size: 130.0%'>modx(2)</a> <a href='/tags/php' style='font-size: 115.0%'>php(1)</a> <a href='/tags/plugin' style='font-size: 115.0%'>plugin(1)</a> <a href='/tags/regexp' style='font-size: 115.0%'>regexp(1)</a> <a href='/tags/ruby' style='font-size: 115.0%'>ruby(1)</a> <a href='/tags/ruby-on-rails' style='font-size: 115.0%'>ruby on rails(1)</a> <a href='/tags/tv' style='font-size: 115.0%'>tv(1)</a> <a href='/tags/vim' style='font-size: 115.0%'>vim(1)</a> <a href='/tags/zsh' style='font-size: 130.0%'>zsh(2)</a> <a href='/tags/факап' style='font-size: 160.0%'>факап(4)</a> </div>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/Andrew8xx8">@Andrew8xx8</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'Andrew8xx8',
+            count: 3,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+<section class="googleplus">
+  <h1>
+    <a href="https://plus.google.com/116651772594034674694?rel=author">
+      <img src="http://www.google.com/images/icons/ui/gprofile_button-32.png" width="32" height="32">
+      Google+
+    </a>
+  </h1>
+</section>
+
+
+
+  
+</aside>
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2017 - Andrey Kulakov (8xx8) -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = '8xx8';
+      
+        
+        var disqus_script = 'count.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id; js.async = true;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+(function (d, w, c) {
+    (w[c] = w[c] || []).push(function() {
+        try {
+            w.yaCounter10074490 = new Ya.Metrika({id:10074490,
+                    clickmap:true,
+                    trackLinks:true,
+                    accurateTrackBounce:true});
+        } catch(e) { }
+    });
+
+    var n = d.getElementsByTagName("script")[0],
+        s = d.createElement("script"),
+        f = function () { n.parentNode.insertBefore(s, n); };
+    s.type = "text/javascript";
+    s.async = true;
+    s.src = (d.location.protocol == "https:" ? "https:" : "http:") + "//mc.yandex.ru/metrika/watch.js";
+
+    if (w.opera == "[object Opera]") {
+        d.addEventListener("DOMContentLoaded", f, false);
+    } else { f(); }
+})(document, window, "yandex_metrika_callbacks");
+</script>
+<noscript><div><img src="//mc.yandex.ru/watch/10074490" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-36921845-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</body>
+</html>

@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: vim | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/vim/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Keydown - как я делаю презентации]]></title>
+    <link href="http://8xx8.ru/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii/"/>
+    <updated>2013-01-11T14:57:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii</id>
+    <content type="html"><![CDATA[<p>Я очень люблю, если каким-либо инструментом можно по максимуму управлять с клавиатуры. Так же я очень люблю автоматизацию, <code>Markdown</code> и просто красивые вещи. Я не люблю программы с перегруженным интерфейсом и много тыкать мышью для того, чтобы выполнить простешее действие.</p>
+
+<p>Всё что мне нужно для презентации это — каскад слайдов и иметь возможность переходить по ним в разных направлениях, чтобы текст с них хорошо читался и выглядело красиво. Я ленив. Я хочу просто набрать текст, нажать кнопочку и чтобы БАХ, и мой текст превратися в презентацию размещённую в интернете и готовую к показу.</p>
+
+<p>Мечта? Нет. Реальность.</p>
+
+<!-- more -->
+
+
+<h2>В кратце о технологиях</h2>
+
+<p><a href="http://daringfireball.net/projects/markdown/">Markdown</a> — облегчённый язык разметки. Первоначально создан Джоном Грубером (англ. John Gruber) и Аароном Шварцем, целью которых являлось создание максимально удобочитаемого и удобного в публикации облегчённого языка разметки</p>
+
+<p><a href="https://github.com/infews/keydown">Keydown</a> — Генератор HTML5 презентаций из Markdown кода.</p>
+
+<p><a href="http://pages.github.com/">Github::Pages</a> — Хостинг статических сайтов, позволяет в один клик из Git репозитория сделать сайт опубликованный в вебе.</p>
+
+<h2>Рабочий процесс</h2>
+
+<p>Разберём как это делается на классическом примере <code>Hello World!</code>. Создадим презентацию из двух слайдов c текстом Hello и World.</p>
+
+<p>Устанавливаем гем <code>keydown</code></p>
+
+<p><code>
+gem install keydown
+</code></p>
+
+<p>Генерируем новую презентацию</p>
+
+<p><code>
+keydown generate hello-world
+</code></p>
+
+<p>Переходим в получившуюся папку и переименовывем <code>slides.md</code> в <code>index.md</code>, чтобы впоследствии упростить публикацию</p>
+
+<p><code>
+cd hello-world
+mv slides.md index.md
+</code></p>
+
+<p>Любым удобным способом редактируем файл <code>index.md</code>, заменив всё что в нём на:</p>
+
+<p>```</p>
+
+<h1>hello-world</h1>
+
+<p>!SLIDE</p>
+
+<h1>Первый слайд</h1>
+
+<h2>Hello</h2>
+
+<p>!SLIDE</p>
+
+<h1>Второй слайд</h1>
+
+<h2>World</h2>
+
+<p>```</p>
+
+<p>Генерируем слайды</p>
+
+<p><code>
+keydown slides index.md
+</code></p>
+
+<p>Идём на Github и создаём там новый репозиторий <code>hello-world</code>, затем из папки с презентацией выполняем следующие комманды подставив вместо <code>&lt;адрес_репозитория&gt;</code> адресс новго репозитория. Он должен выглядить типа: <code>git@github.com:ВАШ_ЛОГИН/hello-world.git</code>.</p>
+
+<p><code>
+git init
+git remote add origin &lt;адрес_репозитория&gt;
+echo '.saas-cache' &gt; .gitignore
+git checkout -b gh_pages
+git add .
+git commit -m "Init commit"
+git push -u origin master:gh-pages
+</code></p>
+
+<p>Всё. Ждём. По адресу <code>http://ВАШ_ЛОГИН.github.com/hello-world</code> должна скоро появиться презентация.</p>
+
+<h2>В дальнейшем чтобы внести изменения</h2>
+
+<ul>
+<li>Любым удобным способом редактируем файл <code>index.md</code></li>
+<li>Генерируем слайды (<code>keydown slides index.md</code>)</li>
+<li>Коммитим, пушим</li>
+</ul>
+
+
+<p><code>
+git add .
+git commit -m "changes"
+git push
+</code></p>
+]]></content>
+  </entry>
+  
+</feed>

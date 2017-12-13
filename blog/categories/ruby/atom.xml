@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: Ruby | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/blog/categories/ruby/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Плагин link для Jekyll]]></title>
+    <link href="http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll/"/>
+    <updated>2012-12-21T01:19:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll</id>
+    <content type="html"><![CDATA[<p>Нужно было для одного статического сайта сделать так, чтобы все ссылки
+которые ведут на текущую открытую страницу помечались классом <code>current</code>.
+Для того что бы пользователь по структуре меню мог определить, где он
+находится.</p>
+
+<p>Я написал плагин для этого. <a href="https://github.com/Andrew8xx8/jekyll-link">https://github.com/Andrew8xx8/jekyll-link</a></p>
+
+<!-- more -->
+
+
+<p>Плагин добавляет новый тег <code>link</code> с помощью которого генерируется HTML
+код для ссылки, причём если адрес страницы в ссылке является частью или
+полностью совпадает с адресом той страницы на которой она расположена,
+то в неё добавится класс <code>current</code>.</p>
+
+<p>Например, имеем такой шаблон с меню:</p>
+
+<p>```html
+
+ <ul>
+   <li>{% link /blog Blog %}
+   <li></p>
+
+<pre><code> {% link /about About %}
+ &lt;ul&gt;
+   &lt;li&gt;{% link /about/author Author %}
+ &lt;/ul&gt;
+</code></pre>
+
+<p>   </li>
+ </ul>
+
+```</p>
+
+<p>На странице с автором (<code>/about/author</code>) сгенерируется такой код:</p>
+
+<p>```html
+
+ <ul>
+   <li><a href="http://8xx8.ru/blog">Blog</a></li>
+   <li></p>
+
+<pre><code> &lt;a href="http://8xx8.ru/about" class="current"&gt;About&lt;/a&gt;
+ &lt;ul&gt;
+   &lt;li&gt;&lt;a href="http://8xx8.ru/about/author" class="current"&gt;Author&lt;/a&gt;
+ &lt;/ul&gt;
+</code></pre>
+
+<p>   </li>
+ </ul>
+
+```</p>
+
+<p>Смешно, но документация с примерами к плагину занимет больше строк чем сам код.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Каталог lib в Rails]]></title>
+    <link href="http://8xx8.ru/blog/2012/12/10/katalogh-lib-v-rails/"/>
+    <updated>2012-12-10T10:58:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/12/10/katalogh-lib-v-rails</id>
+    <content type="html"><![CDATA[<p>Однозначного и общеизвестного ответа на вопрос &ldquo;Что положить в либ?&rdquo;
+нет, обычно туда валится всё, что нельзя положить в другие места. Вопрос
+что с этим делать дальше.</p>
+
+<!-- more -->
+
+
+<p>Первое, что нужно сделать, подключить эту папку в автозагрузку в
+<code>config/application.rb</code>:</p>
+
+<p><code>ruby
+config.autoload_paths += %W(#{config.root}/lib)
+config.autoload_paths += Dir["#{config.root}/lib/**/"]
+</code></p>
+
+<p>Затем тестирование.</p>
+
+<p>Плохая идея подключать эти тесты прямо в <code>test_helper.rb</code>, типа такого:</p>
+
+<p><code>ruby
+Dir[Rails.root.join("test/lib/*.rb")].each {|f| require f}
+</code></p>
+
+<p>Подключённые таким образом тесты будут выполнятся при любом раскладе,
+даже при запуске тестов определённого типа например <code>rake test:functionals</code>.</p>
+
+<p>Правильным решением этой задачи является подключение дополнительных
+тестов через Rake Task.</p>
+
+<p>Для этого нужно в создать или добавить в файл <code>lib/tasks/test.rake</code>
+новую задачу описывающую запуск дополнительных тестов:</p>
+
+<p>```ruby
+namespace :test do
+  Rails::SubTestTask.new(:lib => &ldquo;test:prepare&rdquo;) do |t|</p>
+
+<pre><code>t.libs &lt;&lt; "test"
+t.pattern = 'test/lib/**/*_test.rb'
+</code></pre>
+
+<p>  end
+end
+```</p>
+
+<p>Теперь тесты доступны для запуска через <code>rake test:lib</code>.</p>
+
+<p>Далее если нужно добавить запуск этих тестов по умолчанию при запуске
+всех то дописываем ниже:</p>
+
+<p><code>ruby
+lib_task = Rake::Task["test:lib"]
+test_task = Rake::Task[:test]
+test_task.enhance { lib_task.invoke }
+</code></p>
+
+<p>Чтобы научить tconsole понимать наши тесты нужно добавить либо в проект,
+либо в домашнюю директорию файл <code>.tconsole</code>, в котором добавить lib как
+тип тестов. Моя конфигурация для Rails приложения:</p>
+
+<p><div><script src='https://gist.github.com/4249514.js'></script>
+<noscript><pre><code>TConsole::Config.run do |config|
+  config.include_paths = [&quot;./test&quot;, &quot;./lib&quot;]
+
+  config.file_sets = {
+    &quot;all&quot; =&gt; [
+      &quot;./test/unit/**/*_test.rb&quot;,
+      &quot;./test/functional/**/*_test.rb&quot;,
+      &quot;./test/integration/**/*_test.rb&quot;,
+      &quot;./test/lib/*_test.rb&quot;, 
+      &quot;./test/lib/**/*_test.rb&quot;
+    ], 
+    &quot;lib&quot; =&gt; [&quot;./test/lib/*_test.rb&quot;, &quot;./test/lib/**/*_test.rb&quot;],
+    &quot;units&quot; =&gt; [&quot;./test/unit/**/*_test.rb&quot;],
+    &quot;unit&quot; =&gt; [&quot;./test/unit/**/*_test.rb&quot;],
+    &quot;functionals&quot; =&gt; [&quot;./test/functional/**/*_test.rb&quot;],
+    &quot;functional&quot; =&gt; [&quot;./test/functional/**/*_test.rb&quot;], 
+    &quot;integration&quot; =&gt; [&quot;./test/integration/**/*_test.rb&quot;]
+  }
+end
+</code></pre></noscript></div>
+</p>
+]]></content>
+  </entry>
+  
+</feed>

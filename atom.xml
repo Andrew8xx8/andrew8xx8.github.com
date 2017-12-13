@@ -1,0 +1,2099 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Как поттратить свои изменения в Git]]></title>
+    <link href="http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git/"/>
+    <updated>2016-10-06T14:26:29+07:00</updated>
+    <id>http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git</id>
+    <content type="html"><![CDATA[<p><strong>TL;DR</strong> При изменение коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в дургую ветку.</p>
+
+<p>Иначе, если вы полностью отмените сделанные в файле изменения, то он пропадет из дифа этого коммита, и при повторном мерже с ним ничего не произойдет.  Все будет так, как и было в целевой  ветке до мержа. <code>git merge</code> будет говорить Already up-to-date, но контент файлов будет разный в этих ветках.</p>
+
+<p>Простой пример из практики. Вы написали <code>console.log</code> в своей ветке, замержили в стейджинг, задеплоили, потестили, вспомнили, что был лишний код, пошли откатили этот <code>console.log</code>, замержили в стейджинг снова, все замержилось без конфликтов, но <code>console.log</code> в стейджинге остался, а у вас в ветке нет.</p>
+
+<p>Притом это работает в любую сторону на уровне файла. Удалили строку в файле –> замерижили куда-то –> вернули туже строку в файл поменяв коммит –> замержили снова. Там где меняли строка есть, там куда мержили нет. Получается, классическая ситуация: &ldquo;А у меня на ноутбуке все работает, сами ищите что не так!&rdquo;.</p>
+
+<h2>Погнали разбираться ну как так-то</h2>
+
+<p>Создадим репозиторий и в нем два файла:</p>
+
+<!-- more -->
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup <span class="nv">$ </span>git init
+</span><span class='line'>Initialized empty Git repository in /tmp/git_fuckup/.git/
+</span><span class='line'>/tmp/git_fuckup <span class="nv">$ </span>touch correct.txt broken.txt
+</span><span class='line'>/tmp/git_fuckup <span class="nv">$ </span>git add .
+</span><span class='line'>/tmp/git_fuckup <span class="nv">$ </span>git commit -m <span class="s2">&quot;Init commit&quot;</span>
+</span><span class='line'><span class="o">[</span>master <span class="o">(</span>root-commit<span class="o">)</span> d2b04c9<span class="o">]</span> Init commit
+</span><span class='line'> 2 files changed, 0 insertions<span class="o">(</span>+<span class="o">)</span>, 0 deletions<span class="o">(</span>-<span class="o">)</span>
+</span><span class='line'> create mode 100644 broken.txt
+</span><span class='line'> create mode 100644 correct.txt
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Создадим новую ветку, напишем что-нибудь в первый и второй файлы и замержим в мастер:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup <span class="nv">$ </span>git commit -m <span class="s2">&quot;Init commit&quot;</span>
+</span><span class='line'><span class="o">[</span>master <span class="o">(</span>root-commit<span class="o">)</span> d2b04c9<span class="o">]</span> Init commit
+</span><span class='line'> 2 files changed, 0 insertions<span class="o">(</span>+<span class="o">)</span>, 0 deletions<span class="o">(</span>-<span class="o">)</span>
+</span><span class='line'> create mode 100644 broken.txt
+</span><span class='line'> create mode 100644 correct.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git checkout -b feature
+</span><span class='line'>Switched to a new branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;I need to be here!&#39;</span> &gt;&gt; correct.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span><span class="nb">echo</span> <span class="s1">&#39;I need to be here!&#39;</span> &gt;&gt; broken.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git add .
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git commit -m <span class="s2">&quot;Texts added&quot;</span>
+</span><span class='line'><span class="o">[</span>feature 551d298<span class="o">]</span> Texts added
+</span><span class='line'> 2 files changed, 2 insertions<span class="o">(</span>+<span class="o">)</span>
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git checkout master
+</span><span class='line'>Switched to branch <span class="s1">&#39;master&#39;</span>
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git merge feature
+</span><span class='line'>Updating d2b04c9..551d298
+</span><span class='line'>Fast-forward
+</span><span class='line'> broken.txt  | 1 +
+</span><span class='line'> correct.txt | 1 +
+</span><span class='line'> 2 files changed, 2 insertions<span class="o">(</span>+<span class="o">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Прверяем что все ок:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>cat correct.txt
+</span><span class='line'>I need to be here!
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>cat broken.txt
+</span><span class='line'>I need to be here!
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git log --oneline
+</span><span class='line'>551d298 Texts added
+</span><span class='line'>d2b04c9 Init commit
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Переходим снова в фичу и возвращяем файл таким каким он был до коммита, при этом не создаем новый коммит, а меняем его. Для упрощения я откатил его через git, но разницы нет никакой, можно удалить строку в файле вручную.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git checkout feature
+</span><span class='line'>Switched to branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git checkout HEAD~1 broken.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git commit --amend
+</span><span class='line'><span class="o">[</span>feature a12625d<span class="o">]</span> Texts added
+</span><span class='line'> Date: Wed Dec 13 23:09:53 2017 +0700
+</span><span class='line'> 1 file changed, 1 insertion<span class="o">(</span>+<span class="o">)</span>
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>cat broken.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Файл пуст, все как планировали. Внимательный читатель уже должен заметить, что вместо <code>2 files changed, 2 insertions(+)</code> имеем <code>1 file changed, 1 insertion(+)</code>. Из дифа полностью пропал один файл, что логично, мы же полностью удалили то, что добавляли и теперь этих изменений не существует в новом коммите. Важное замечание, что при изменении коммита, всегда создается новый комит с новым хешем, это знание пригодтися позже.</p>
+
+<p>Мержим теперь в мастер:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>cat broken.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git checkout master
+</span><span class='line'>Switched to branch <span class="s1">&#39;master&#39;</span>
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git merge feature
+</span><span class='line'>Merge made by the <span class="s1">&#39;recursive&#39;</span> strategy.
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Все смержилось, конфликтов нет. Казалось бы что все здорово, но:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>cat correct.txt
+</span><span class='line'>I need to be here!
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>cat broken.txt
+</span><span class='line'>I need to be here!
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git co feature
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>cat correct.txt
+</span><span class='line'>I need to be here!
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>cat broken.txt
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В мастере строка есть, в фиче, нет. Чтобы понять, что просиходит, надо вспомнить, как происходит мерж веток.
+При мерже ветки A в B, находится ближайший родительский коммит Y между ними и затем дифы всех коммитов от Y до А поочередно применяются в ветку B.</p>
+
+<p>Посмотрим лог мастер ветки:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>g log --oneline --graph
+</span><span class='line'>*   81825c7 Merge branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>|<span class="se">\</span>
+</span><span class='line'>| * a12625d Texts added
+</span><span class='line'>* | 551d298 Texts added
+</span><span class='line'>|/
+</span><span class='line'>* d2b04c9 Init commit
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Посмотрим дифы коммитов, оригинального и измененного.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>g show a12625d
+</span><span class='line'>commit a12625df8415a45f84a018532e295f6c8421238f
+</span><span class='line'>Author: Andreww8xx8 &lt;avk@8xx8.ru&gt;
+</span><span class='line'>Date:   Wed Dec 13 23:09:53 2017 +0700
+</span><span class='line'>
+</span><span class='line'>    Texts added
+</span><span class='line'>
+</span><span class='line'>diff --git a/correct.txt b/correct.txt
+</span><span class='line'>index e69de29..c20dfcd 100644
+</span><span class='line'>--- a/correct.txt
+</span><span class='line'>+++ b/correct.txt
+</span><span class='line'>@@ -0,0 +1 @@
+</span><span class='line'>+I need to be here!
+</span></code></pre></td></tr></table></div></figure>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>g show 551d298
+</span><span class='line'>commit 551d2989dc60290122d7853c3373b0e0e09757ce
+</span><span class='line'>Author: Andreww8xx8 &lt;avk@8xx8.ru&gt;
+</span><span class='line'>Date:   Wed Dec 13 23:09:53 2017 +0700
+</span><span class='line'>
+</span><span class='line'>    Texts added
+</span><span class='line'>
+</span><span class='line'>diff --git a/broken.txt b/broken.txt
+</span><span class='line'>index e69de29..c20dfcd 100644
+</span><span class='line'>--- a/broken.txt
+</span><span class='line'>+++ b/broken.txt
+</span><span class='line'>@@ -0,0 +1 @@
+</span><span class='line'>+I need to be here!
+</span><span class='line'>diff --git a/correct.txt b/correct.txt
+</span><span class='line'>index e69de29..c20dfcd 100644
+</span><span class='line'>--- a/correct.txt
+</span><span class='line'>+++ b/correct.txt
+</span><span class='line'>@@ -0,0 +1 @@
+</span><span class='line'>+I need to be here!
+</span><span class='line'>/tmp/git_fuckup<span class="o">[</span>feature<span class="o">]</span> ±
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>При втором мерже <code>git</code> пытается накатить диф коммита <code>a12625d</code>. В нем только одно изменение в файле <code>correct.txt</code> и оно не конфликтует с тем, что есть в фаловой системе после коммита <code>551d298</code>, а про файл <code>broken.txt</code> в дифе <code>a12625d</code> ничего нет, по этому он тоже останется таким как был в <code>551d298</code>.</p>
+
+<p>Все комнады чтобы упростить копипаст, если вы вдруг заходтите воспроизвести ситуацию сами есть <a href="https://gist.github.com/Andrew8xx8/58319104b9b17e136f0ce7bbdabad1c6">здесь</a>.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Минус-мерж]]></title>
+    <link href="http://8xx8.ru/blog/2015/02/17/minus-merge/"/>
+    <updated>2015-02-17T23:49:58+07:00</updated>
+    <id>http://8xx8.ru/blog/2015/02/17/minus-merge</id>
+    <content type="html"><![CDATA[<p>Большинство скорее всего знакомы с &ldquo;магическим&rdquo; аргументом <code>-</code> для комнады <code>cd</code> в консоли. Это переход в предыдущую выбранную дирректорию.</p>
+
+<p>Работает так:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span><span class="nb">cd</span> /
+</span><span class='line'>8xx8@mac / <span class="nv">$ </span><span class="nb">cd</span> -
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Некоторые знают о том, что git поддерживает похожее поведение при смене ветки:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git co feature
+</span><span class='line'>Switched to branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>feature<span class="o">]</span> <span class="nv">$ </span>git co -
+</span><span class='line'>Switched to branch <span class="s1">&#39;master&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>master<span class="o">]</span> <span class="nv">$ </span>git co -
+</span><span class='line'>Switched to branch <span class="s1">&#39;feature&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>feature<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Здесь я использовал алиас <code>co</code> для <code>checkout</code>. Вообще про алиасы у меня была отдельная статья.</p>
+
+<p>В общем все понятно и логично. Но мало кто знает что аргумент <code>-</code> можно передавать как аргумент к merge.  Давайте посмотрим что из этого выходит.</p>
+
+<!-- more -->
+
+
+<p>На этот варанант я натолкнулся совсем случайно. Мы используем git-flow и названия веток у нас, как результат, длинные. Сливать свои изменения в staging приходится достаточно часто, вот и я подумал, а как так сделать, что бы поменьше делать.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>8xx8@mac git-minus<span class="o">[</span>feature/coll_stuff<span class="o">]</span> <span class="nv">$ </span>git commit -m <span class="s2">&quot;second&quot;</span>
+</span><span class='line'><span class="o">[</span>feature 8f65d91<span class="o">]</span> second
+</span><span class='line'> 1 file changed, 0 insertions<span class="o">(</span>+<span class="o">)</span>, 0 deletions<span class="o">(</span>-<span class="o">)</span>
+</span><span class='line'>  create mode 100644 2
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>feature/coll_stuff<span class="o">]</span> <span class="nv">$ </span>git co staging
+</span><span class='line'>Switched to branch <span class="s1">&#39;staging&#39;</span>
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>staging<span class="o">]</span> <span class="nv">$ </span>g merge -
+</span><span class='line'>Updating a2c0a4d..8f65d91
+</span><span class='line'>Fast-forward
+</span><span class='line'> 2 | 0
+</span><span class='line'> 1 file changed, 0 insertions<span class="o">(</span>+<span class="o">)</span>, 0 deletions<span class="o">(</span>-<span class="o">)</span>
+</span><span class='line'> create mode 100644 2
+</span><span class='line'>8xx8@mac ~/git-minus<span class="o">[</span>staging<span class="o">]</span> <span class="err">$</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>PROFIT!</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Поиск по проекту с помощью Ag]]></title>
+    <link href="http://8xx8.ru/blog/2014/03/24/vim-ag/"/>
+    <updated>2014-03-24T12:34:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2014/03/24/vim-ag</id>
+    <content type="html"><![CDATA[<p>Я давно пользуюсь <a href="https://github.com/ggreer/the_silver_searcher">The Silver Searcher</a> как заменой стандартному <code>grep</code>. О достоинствах такого выбора можно посмотреть на странице проекта.</p>
+
+<p>Для своего любимого редактора я долгое время использовал плагин <a href="https://github.com/mileszs/ack.vim">Ack</a>. Он обладает рядом багов, но в целом пользоваться можно.</p>
+
+<p>Недавно я наткнулся на его форк <a href="https://github.com/rking/ag.vim">Ag</a>. Зацепило в нем две вещи:</p>
+
+<ul>
+<li>строка поиска сохраняется в регистр поиска;</li>
+<li>наличие комманды AgFromSearch, которая позволяет искать то, чтобыло в регистре поиска.</li>
+</ul>
+
+
+<p>Эти факторы позитивно влияют на продуктивность.</p>
+
+<p>В найденом файле все вхождения будут подсвечены (ну если включен <code>hlsearch</code>), и по нему сразу можно будет перемещаться с помощью <code>n</code> или <code>N</code>.</p>
+
+<p>Если нужно поискать слово из текущего файла, нажимаем на этом слове <code>*</code> и выполнив <code>:AgFromSearch</code> без параметров сразу получаем результат.</p>
+
+<p>Так же интересной показалась команда  <code>:AgFile</code>, для поиска файла по имени.</p>
+
+<p>Ну и как бонус, две буквы набирать проще трех.</p>
+
+<!-- more -->
+
+
+<p>Установка плагина не доставит хлопот, если вы используете <a href="https://github.com/gmarik/Vundle.vim"> Vundle </a>, достаточно вписать в ваш .vimrc:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Bundle 'rking/ag.vim'</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Из настроек я посчитал необходиммым:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  " Конфиг для вызова ag
+</span><span class='line'>  let g:agprg = 'ag --nogroup --nocolor --column --smart-case'
+</span><span class='line'>
+</span><span class='line'>  let g:aghighlight=1 " Подсветить поиск
+</span><span class='line'>  cabbrev As AgFromSearch " Псевдоним чтобы меньше писать</span></code></pre></td></tr></table></div></figure>
+
+
+<p><a href="https://github.com/Andrew8xx8/dotfiles/commit/b320da45a2ece73611a5f5b855539a41a2f38bc8"> Коммит </a> с изменениями в моем репозитории.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Цифровая закладка]]></title>
+    <link href="http://8xx8.ru/blog/2014/03/18/digital-bookmark/"/>
+    <updated>2014-03-18T21:59:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2014/03/18/digital-bookmark</id>
+    <content type="html"><![CDATA[<p>Несколько дней назад во время обеда у меня произошел такой диалог с
+коллегой:</p>
+
+<p>— Ты дочитал книгу про Vim? </br>
+— Нет. </br>
+— А идеальный питч? </br>
+— Нет. Только половину. </br>
+— Эх, ну ты и читатель! </br></p>
+
+<p>И тут я задумался. Ведь и правда, читаю я нерегулярно, медленно и хватаюсь за
+все подряд. Иногда у меня просто вылетает из головы мысль о том, что нужно взять
+книгу и почитать. А бывают случаи, когда приходится себя заставлять прочесть даже
+что-то увлекательное. Причем с этим есть обратная сторона, если
+книга мне очень интересна, то я, забыв про все, читаю ее днями на пролет.</p>
+
+<p>Такое положение дел меня не устраивает.</p>
+
+<!-- more -->
+
+
+<p>И тут сама собой пришла мысль найти инструмент, который бы помог систематизировть
+мой процесс чтения и мотивировать меня это делать чаще.</p>
+
+<p>Тут можно провести четкую аналогию со спортивными трекерами. Принцип мотивации тот же.
+Хочу <code>Endomondo</code>, только для чтения.</p>
+
+<p>Что помогло бы мне:</p>
+
+<ul>
+<li>получать напоминания о том, что книгу надо дочитывать;</li>
+<li>видеть, какие книги я читаю и каков по ним прогресс;</li>
+<li>видеть, что читают мои друзья и как быстро они это делают;</li>
+<li>посмотреть статистику на предмет как быстро я читаю, сколько читаю в среднем;</li>
+<li>иметь возможность хвастаться моими успехами и может быть получать иногда
+поощрения (хотя бы в виде медалек в профиле).</li>
+</ul>
+
+
+<p>Первое можно решить с помощью периодического напоминания в календаре, только
+оно будет напоминать в принципе о процессе, а не о конкретной книге.</p>
+
+<p>Второе могут предоставить различные программы для чтения или же
+электронные книги. Но я чаще читаю печатные издания. Хотя и для них есть
+интересный девайс <a href="http://www.mark-my-time.com/">http://www.mark-my-time.com/</a></p>
+
+<p>Социальную составляющую может отчасти удовлетворить <code>goodreads</code> или <code>imhonet</code>, но
+там нет статистики, можно видеть только факт прочтения или не прочтения.</p>
+
+<p>В общем я бы хотел иметь единый подход, не распыляясь между сервисами и
+инструментами. Хочу умную цифровую закладку. И чтобы в облаке, и SasS, и с
+приложением на телефон.</p>
+
+<p>Я думаю, что задача реализовать такой сервис самому не сложна. Бекенд
+достаточно прост, а с мобильниками на начальном этапе достаточно лишь грамотной
+верстки на <code>bootstrap.</code> Для пользователя, чтобы получить все плюсы, описываемые
+выше надо:</p>
+
+<ul>
+<li>авторизоваться в сервисе через удобную cоциальную сеть;</li>
+<li>выбрать, что он будет читать;</li>
+<li>записывать, на какой странице остановился после очередного чтения.</li>
+</ul>
+
+
+<p>Так вот вопросы сообществу:</p>
+
+<ul>
+<li>Может быть уже есть то, что отвечает моим желаниям, и вы этим пользуетесь?</li>
+<li>Нужен ли такой инструмент кому-нибудь кроме меня?</li>
+<li>Кто-нибудь хочет помочь запилить это как-нибудь на выходных?</li>
+</ul>
+
+
+<p>Ответы пишите в комменты. Репосты в социалочки буду расценивать как
+голос за то, что идея имеет право на жизнь и ее надо воплощать.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Будь ленив и быстр. Git]]></title>
+    <link href="http://8xx8.ru/blog/2013/11/12/bud-lieniv-i-bystr-git/"/>
+    <updated>2013-11-12T12:32:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/11/12/bud-lieniv-i-bystr-git</id>
+    <content type="html"><![CDATA[<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cat ~/.zsh_history | wc -c
+</span><span class='line'>431403</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Столько символов я использовал, набирая различные команды в консоли.</p>
+
+<p>Не знаю как вам, а я думаю, это много. Даже если учесть, что половину из этого занимают
+пути к файлам и части, дополненные автокомплитом, это все равно много. Статистика взята
+примерно за 4 месяца, и если выкинуть выходные и прикинуть, получается около 6000 знаков в
+день. Пара страниц формата А4. Большая часть этого труда – это  рутинные команды или
+последовательности типичных действий.</p>
+
+<p>Как ни странно, но это одна из немногих ситуаций в жизни, когда можно делать минимум, а
+результата получать максимум.</p>
+
+<!-- more -->
+
+
+<p>Помогут в этом знания полезных программ, приготовленные в функции и автодополнения,
+поданные под нужным соусом из псевдонимов. Но путь ленивых и быстрых не для новичков.
+Существует опасность получить «алиас головного мозга» или «расстройство
+отсутствия плагина», совершено забыв о том, что где-то в недрах вашего блюда есть то,
+что имеет совершенно другую начинку.</p>
+
+<p>Погружение на темную сторону можно разделить на несколько частей. Согласно сложности
+реализации и абстрагированности от реальной жизни.</p>
+
+<h2>Git</h2>
+
+<p>Не секрет, что <code>git</code> обладает продвинутым и гибким интерфейсом командной строки, но эта
+гибкость достигается дорогой ценой, а именно многословностью. В результате для
+выполнения некоторых простых действий требуется вводить немалое количество слов в
+командной строке.</p>
+
+<p>На этапе знакомства с системой это даже хорошо, помогает вникнуть. Но
+в повседневной работе набирать раз за разом небольшой эпос в командной строке,
+когда, например, нужно посмотреть только diff определенного коммита, тяжело.</p>
+
+<h3>Полезные опции</h3>
+
+<p>Эти мелочи могут выручить всегда, даже если вашего <code>dotfiles</code> не будет рядом.</p>
+
+<p><code>git log --oneline</code> — Вывести лог в одну строку.</p>
+
+<p><code>git add -u</code> — Добавить в stage все, кроме файлов, находящихся вне git.</p>
+
+<p><code>git status -s</code> — Прагматичный статус без лишней информации.</p>
+
+<p><code>git branch --merged</code> — Ветки слитые в текущую.</p>
+
+<p><code>git branch --no-merged</code> — Ветки не слитые в текущую.</p>
+
+<h3>Базовые сокращения</h3>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cp = cherry-pick
+</span><span class='line'>st = status -s
+</span><span class='line'>cl = clone
+</span><span class='line'>ci = commit
+</span><span class='line'>co = checkout
+</span><span class='line'>br = branch
+</span><span class='line'>
+</span><span class='line'>sl = stash list
+</span><span class='line'>sa = stash apply
+</span><span class='line'>ss = stash save
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Diff</h3>
+
+<p>Изменения, приготовленные к коммиту (staged)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dc = diff --cached</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Изменения в последнем коммите</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dlc = diff --cached HEAD^</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Изменения в определенном коммите (<code>git dr dcee010</code>)</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>dr  = "!f() { git diff "$1"^.."$1"; }; f"</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Push / Pull</h3>
+
+<p>Применение изменений из векти так, чтобы все наши коммиты шли после</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>up = pull --rebase</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Отправление только текущей ветки</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>put = push origin HEAD</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Коммит</h3>
+
+<p>Отмена последнего коммита с сохранением состояния stage</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>undo = reset --soft HEAD^</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Добавить все файлы в stage к последнему коммиту, не котрывая редактор
+с сообщением</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>aps = commit --amend -C HEAD</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Определить нахождение коммита</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>where = branch -av --contains</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Красивый лог</h3>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>lg = log --pretty=format:\"%h %Cblue%ar %Cgreen%an%Creset: %s %Cred%d\"
+</span><span class='line'>ll = log -10 --pretty=format:\"%h %Cblue%ar %Cgreen%an%Creset: %s %Cred%d\"
+</span><span class='line'>gr = log --graph --pretty=format:\"%Cred%h %Cblue%ar%Creset %Cgreen%an%Creset %s%Cred%d\"o</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Все или не все? (Git Push)]]></title>
+    <link href="http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie/"/>
+    <updated>2013-06-12T13:45:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/06/12/git-vsie-ili-nie-vsie</id>
+    <content type="html"><![CDATA[<p>Часто ли вы задумывались над тем, какие ветки будут отправлены в
+удалённый репозиторий при выполнении команды <code>push</code>?</p>
+
+<p>А поможет ли вам задуматься над этим такая картина?</p>
+
+<p><img src="http://8xx8.ru/images/content/force-push/1.png" title="[]" ></p>
+
+<p>Наверное, поможет, особенно если увидеть это в ночь перед релизом. А
+началось-то все с того, что хотели фичу красиво слить через rebase.</p>
+
+<p>Так давайте разберёмся, что пошло не так.</p>
+
+<!-- more -->
+
+
+<p>Гит пушит всё. Да, вы не ослышались. По умолчанию это так и есть. Беседы
+о том, что поведение по умолчанию не безопасное оставим за кадром
+и найдём решение.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git push --help
+</span><span class='line'>       git push [--all | --mirror | --tags] [-n | --dry-run]
+</span><span class='line'>[--receive-pack=&lt;git-receive-pack&gt;]
+</span><span class='line'>                  [--repo=&lt;repository&gt;] [-f | --force] [--prune] [-v |
+</span><span class='line'>--verbose] [-u | --set-upstream]
+</span><span class='line'>                  [&lt;repository&gt; [&lt;refspec&gt;...]]</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Как видно из документации, мы можем пропустить указание назначения(repository) и refspec (конструкция вида ЛОКАЛЬНАЯ<em>ВЕТКА[:][УДАЛЁННАЯ</em>ВЕТКА]), по умолчанию в качестве назначения будет использовано origin, а в качестве refspec будет использована одна из стратегий определённых в настройке <code>push.default</code>. Она может принимать такие значения:</p>
+
+<ul>
+<li><code>nothing</code> &ndash; не пушить ничего</li>
+<li><code>matching</code> &ndash; пушить все ветки, названия которых в локальном
+репозитории
+совпадают с названиями в удалённом репозитории.
+<em>Это как раз та опция, которая используется, если ничего не задано</em></li>
+<li><code>upstream</code> &ndash; пушить только текущую ветку в ту ветку на удалённом
+репозитории, которая прописана в конфиге как upstream</li>
+<li><code>tracking</code> &ndash; устаревший синоним для <code>upstream</code></li>
+<li><code>current</code> &ndash; пушить только текущую ветку в ту ветку на удалённом
+репозитории с которой совпадёт имя</li>
+</ul>
+
+
+<p>Самый лучший способ решить проблему – это указывать repository и refspec всегда при выполнении команд <code>push</code>/<code>pull</code>.</p>
+
+<p>Либо полностью:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git push origin branch:branch</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Либо в качестве refspec использовать HEAD:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git push origin HEAD</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В таком случае текущая ветка будет запушена в ветку с таким же названием
+в удалённом репозитории.</p>
+
+<p>Можно сделать псевдоним для команды, чтобы было удобнее</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git config --global alias.put 'git push origin HEAD'</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Есть и другой способ. Изменить поведение по умолчанию при пуше. Но у
+такого подхода есть существенный минус. Как минимум можно привыкнуть к
+тому, что система ведёт себя по другому и в том месте, где она настроена
+не так как у вас или забыв при смене системы настроить её, можно опять
+попасть в ситуацию как на картинке в начале статьи.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>git config --global push.default upstream
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Git: Идеальное преступление]]></title>
+    <link href="http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie/"/>
+    <updated>2013-03-14T12:09:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/03/14/git-idiealnoie-priestuplieniie</id>
+    <content type="html"><![CDATA[<p>В компании, в которой я  работаю в настоящее время, мы используем при
+разработке довольно распространённую <a href="http://nvie.com/posts/a-successful-git-branching-model/">модель ветвления</a>, а в качестве
+инструмента для стандартизации работы по этой схеме <a href="https://github.com/nvie/gitflow">git-flow</a>. Так же мы
+дополнили эту схему ещё одной веткой &mdash; <code>staging</code>. Это временная ветка, в
+которую сливаются <code>feature branches</code>, и на основе неё делаются
+промежуточные релизы на тестовый сервер. Естественно, всё, что
+происходит в этой ветке, нужно для предварительного просмотра и
+тестирования выполненных задач и никак не должно попадать ни в основную
+ветку разработки, ни в master, то есть в итоговый релиз. В принципе,
+схема работы достаточно удачная. Она упрощает взаимодействие и работу
+большой команды с разным навыком работы с git, и нештатные ситуации
+случаются достаточно редко, но зато, если случаются, то это запоминается
+надолго.</p>
+
+<!-- more -->
+
+
+<p>Началось всё с того, что мы стали замечать, что в <code>master</code> или в <code>develop</code>
+ветку начинают попадать коммиты из ветки <code>staging</code>. Самые распространённые
+из них &mdash; это мержи веток с задачами. Первый раз решили, что кто-то по
+невнимательности примержил стейджинг в ветку с задачей и потом вылил,
+разбираться точно как и кто не стали, просто всем ещё раз рассказали как
+нужно вести разработку и посоветовали внимательнее следить за тем, что
+они делают.</p>
+
+<p>Затем история повторилась, но уже в другой команде с другими людьми.
+Стали копать, выяснили, что и раньше такое было, просто никто не замечал
+лишних коммитов в истории, потому что в принципе код работал, тесты
+проходили и ладно.</p>
+
+<p>Разгадка проста и понятна сразу, кто-то примержил staging в ветку со
+своей задачей, а потом через некоторое время, когда она вышла в релиз,
+все нежелательные коммиты и попали в <code>develop</code>, а  потом &mdash; в <code>master</code>. Но
+как? Если первый раз нам удалось найти злополучный коммит вида <code>Merge
+branch staging into 'feature/fourth'</code>, то в последний раз во всей истории
+всё было чисто. Каждый участник команды говорил, что он всё делал по
+инструкции и по модели ветвления.</p>
+
+<p>Те кто знаком с тем, как происходит мерж веток в git, наверное, уже
+догадались почему так. А остальным я продемонстрирую на примере.</p>
+
+<p>Мы имеем новый репозиторий с несколькими коммитами в <code>master</code> ветку и
+одним в <code>develop</code></p>
+
+<p><img src="http://8xx8.ru/images/content/gitfuckup/1.png" title="[]" ></p>
+
+<p>Далее создадим новую задачу(<code>first</code>), закоммитим в неё первый коммит и
+опубликуем.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git flow feature start first
+</span><span class='line'>$ touch first
+</span><span class='line'>$ git add first
+</span><span class='line'>$ git commit -m "First feature commit"
+</span><span class='line'>$ git flow feature publish first</span></code></pre></td></tr></table></div></figure>
+
+
+<p>То же самое сделаем для <code>second</code></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git flow feature start second
+</span><span class='line'>$ touch second
+</span><span class='line'>$ git add second
+</span><span class='line'>$ git commit -m "Second feature commit"
+</span><span class='line'>$ git flow feature publish second</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://8xx8.ru/images/content/gitfuckup/2.png" title="[]" ></p>
+
+<p>Теперь менеджер попросил нас вылить вторую задачу на тестовый сервер:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git checkout -b staging
+</span><span class='line'>$ git merge feature feature/second
+</span><span class='line'>$ git merge feature/second
+</span><span class='line'>$ git push --set-upstream origin staging</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Но, предположим, у нас произошла ошибка в приложении, связанная только с
+тестовым сервером и другого программиста попросили её исправить:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ touch staging-fix
+</span><span class='line'>$ git add staging-fix
+</span><span class='line'>$ git commit -m "Staging fixed"
+</span><span class='line'>$ git push</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://8xx8.ru/images/content/gitfuckup/3.png" title="[]" ></p>
+
+<p>Далее нас попросили вылить на тестовый сервер первую задачу. Для этого
+мы перешли в <code>staging</code>, обновили его и влили в него первую задачу:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git checkout staging
+</span><span class='line'>$ git pull --rebase origin staging
+</span><span class='line'>From github.com:Andrew8xx8/try_git
+</span><span class='line'> * branch            staging    -&gt; FETCH_HEAD
+</span><span class='line'>Current branch staging is up to date.
+</span><span class='line'>$ git merge feature/first
+</span><span class='line'>$ git push</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://8xx8.ru/images/content/gitfuckup/4.png" title="[]" ></p>
+
+<p>Пока всё верно. От ветки <code>develop</code> сделаны две задачи. В ветку <code>staging</code> влиты обе ветки с задачами и есть ещё один коммит нужный только для неё.</p>
+
+<p>Мы возвращаемся к разработке второй задачи, но нас кто-то отвлёк и случайно получается, что &ldquo;на автомате из истории&rdquo; мы вполняем такую последовательность комманд:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout feature/first
+</span><span class='line'>git pull --rebase origin staging</span></code></pre></td></tr></table></div></figure>
+
+
+<p>И ничего вроде бы страшного не произошло, в дальнейшей рутине мы можем ничего не заметить. Так называемый мерж коммит не создался, потому что мерж прошёл в режиме <code>fast-forward</code>.</p>
+
+<p>История, если бы в ней не было коммита <code>Staging fixed</code>,  тоже сильно не
+изменилась.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git log --oneline
+</span><span class='line'>87bb177 Merge branch 'feature/first' into staging
+</span><span class='line'>dc4b6d6 Staging fixed
+</span><span class='line'>56351b4 Second feature commit
+</span><span class='line'>7b843ef First feature commit
+</span><span class='line'>f664597 Commit in develop
+</span><span class='line'>dfcf2d5 Removed all the cats
+</span><span class='line'>a0184dc Add all the octocat txt files
+</span><span class='line'>1aad731 Added cute octocat story</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Но кто смотрит историю после перехода в ветку? Поэтому вы продолжаете
+работу. Делаем ещё один коммит в первую задачу (хотя в реале их может
+быть гораздо больше) и публикуем её.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ touch first-finish
+</span><span class='line'>$ git add first-finish
+</span><span class='line'>$ git commit -m "First feature finished"
+</span><span class='line'>$ git push</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Никаких подозрительных сообщений в консоли. Всё вроде бы нормально.
+Поэтому мы продолжаем спокойно спать по ночам, а остальная комманда
+работать над проектом, потому что по сути только наша ветка содержит
+сейчас стейджинг.</p>
+
+<p><img src="http://8xx8.ru/images/content/gitfuckup/5.png" title="[]" ></p>
+
+<p>Хотя уже по графику видно, что произошёл некоторый факап, но когда веток
+и людей много этого незаметно, да и кто смотрит графики.</p>
+
+<p>Затем нас просят выпустить первую задачу и сделать релиз, что мы и
+делаем:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git flow feature finish first
+</span><span class='line'>$ git push
+</span><span class='line'>$ git flow release start v1
+</span><span class='line'>$ git flow release finish v1
+</span><span class='line'>$ git push</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://8xx8.ru/images/content/gitfuckup/6.png" title="[]" ></p>
+
+<p>Ну вот и всё. Полный фарш. В релиз попало то, что было в <code>staging</code>. В истории всё чисто с точки зрения того, что нет мерж коммита:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>$ git log --oneline
+</span><span class='line'>5db05f9 Merge branch 'release/v1'
+</span><span class='line'>ffb5ee5 Merge branch 'feature/first' into develop
+</span><span class='line'>d93f812 First feature finished
+</span><span class='line'>87bb177 Merge branch 'feature/first' into staging
+</span><span class='line'>dc4b6d6 Staging fixed
+</span><span class='line'>56351b4 Second feature commit
+</span><span class='line'>7b843ef First feature commit
+</span><span class='line'>f664597 Commit in develop
+</span><span class='line'>dfcf2d5 Removed all the cats
+</span><span class='line'>a0184dc Add all the octocat txt files
+</span><span class='line'>1aad731 Added cute octocat story</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Если посмотреть reflog, то вот те строчки, которые были сгенерированы во
+время выполнения ошибочной команды:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>87bb177 HEAD@{6}: rebase finished: returning to refs/heads/feature/first
+</span><span class='line'>87bb177 HEAD@{7}: checkout: moving from feature/first to 87bb1774e8d6555a06707a03ef1f0f9636206317^0
+</span><span class='line'>7b843ef HEAD@{8}: checkout: moving from feature/second to feature/first</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Тоже ничего необычного.</p>
+
+<p>Причина такого поведения &mdash; это fast-forward мерж. При таком слиянии в
+случае, если это возможно, указатель ветки просто перемещается на то же
+место, куда указывает ветка, которая вливается:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git checkout develop
+</span><span class='line'>git merge feature</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="http://8xx8.ru/git-kmb/images/mr1.png" alt="" /></p>
+
+<p>Как исправить получившуюся ситуацию? Никак. Можно попробовать найти
+ветку, в которую влит <code>staging</code> и попробовать откатить её слияние в
+<code>develop</code>,
+а также удалить коммиты с релизом и почистить все ветки, но это долго и
+сложно, особенно если веток с задачами много.</p>
+
+<p>Что делать чтобы такое не произошло?</p>
+
+<p>Что делать, чтобы такое не произошло?</p>
+
+<ol>
+<li>Внимательно следить за исполняемыми командами.</li>
+<li>Если используется git-flow, то использовать его команды для
+обновления и публикации веток.</li>
+<li>Использовать либо полный синтаксис команды <code>git push/pull</code>,  либо
+полностью сокращённый синтаксис без указания веток. Потому что в
+ситуации из приведённого примера не указывается, в какую ветку слить
+изменения, поэтому так и получилось, что информация из <code>staging</code> попала в
+ветку с задачей.</li>
+</ol>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Keydown - как я делаю презентации]]></title>
+    <link href="http://8xx8.ru/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii/"/>
+    <updated>2013-01-11T14:57:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/01/11/keydown-kak-ia-dielaiu-priezientatsii</id>
+    <content type="html"><![CDATA[<p>Я очень люблю, если каким-либо инструментом можно по максимуму управлять с клавиатуры. Так же я очень люблю автоматизацию, <code>Markdown</code> и просто красивые вещи. Я не люблю программы с перегруженным интерфейсом и много тыкать мышью для того, чтобы выполнить простешее действие.</p>
+
+<p>Всё что мне нужно для презентации это — каскад слайдов и иметь возможность переходить по ним в разных направлениях, чтобы текст с них хорошо читался и выглядело красиво. Я ленив. Я хочу просто набрать текст, нажать кнопочку и чтобы БАХ, и мой текст превратися в презентацию размещённую в интернете и готовую к показу.</p>
+
+<p>Мечта? Нет. Реальность.</p>
+
+<!-- more -->
+
+
+<h2>В кратце о технологиях</h2>
+
+<p><a href="http://daringfireball.net/projects/markdown/">Markdown</a> — облегчённый язык разметки. Первоначально создан Джоном Грубером (англ. John Gruber) и Аароном Шварцем, целью которых являлось создание максимально удобочитаемого и удобного в публикации облегчённого языка разметки</p>
+
+<p><a href="https://github.com/infews/keydown">Keydown</a> — Генератор HTML5 презентаций из Markdown кода.</p>
+
+<p><a href="http://pages.github.com/">Github::Pages</a> — Хостинг статических сайтов, позволяет в один клик из Git репозитория сделать сайт опубликованный в вебе.</p>
+
+<h2>Рабочий процесс</h2>
+
+<p>Разберём как это делается на классическом примере <code>Hello World!</code>. Создадим презентацию из двух слайдов c текстом Hello и World.</p>
+
+<p>Устанавливаем гем <code>keydown</code></p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>gem install keydown</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Генерируем новую презентацию</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>keydown generate hello-world</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Переходим в получившуюся папку и переименовывем <code>slides.md</code> в <code>index.md</code>, чтобы впоследствии упростить публикацию</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>cd hello-world
+</span><span class='line'>mv slides.md index.md</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Любым удобным способом редактируем файл <code>index.md</code>, заменив всё что в нём на:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'># hello-world
+</span><span class='line'>
+</span><span class='line'>!SLIDE
+</span><span class='line'>
+</span><span class='line'># Первый слайд
+</span><span class='line'>
+</span><span class='line'>## Hello
+</span><span class='line'>
+</span><span class='line'>!SLIDE
+</span><span class='line'>
+</span><span class='line'># Второй слайд
+</span><span class='line'>
+</span><span class='line'>## World</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Генерируем слайды</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>keydown slides index.md</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Идём на Github и создаём там новый репозиторий <code>hello-world</code>, затем из папки с презентацией выполняем следующие комманды подставив вместо <code>&lt;адрес_репозитория&gt;</code> адресс новго репозитория. Он должен выглядить типа: <code>git@github.com:ВАШ_ЛОГИН/hello-world.git</code>.</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git init
+</span><span class='line'>git remote add origin &lt;адрес_репозитория&gt;
+</span><span class='line'>echo '.saas-cache' &gt; .gitignore
+</span><span class='line'>git checkout -b gh_pages
+</span><span class='line'>git add .
+</span><span class='line'>git commit -m "Init commit"
+</span><span class='line'>git push -u origin master:gh-pages</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Всё. Ждём. По адресу <code>http://ВАШ_ЛОГИН.github.com/hello-world</code> должна скоро появиться презентация.</p>
+
+<h2>В дальнейшем чтобы внести изменения</h2>
+
+<ul>
+<li>Любым удобным способом редактируем файл <code>index.md</code></li>
+<li>Генерируем слайды (<code>keydown slides index.md</code>)</li>
+<li>Коммитим, пушим</li>
+</ul>
+
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>git add .
+</span><span class='line'>git commit -m "changes"
+</span><span class='line'>git push</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Дорожные докладаторы. От @Ulway до Waytag.ru]]></title>
+    <link href="http://8xx8.ru/blog/2013/01/09/dorojnie-dokladatory/"/>
+    <updated>2013-01-09T14:21:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2013/01/09/dorojnie-dokladatory</id>
+    <content type="html"><![CDATA[<p>Сейчас стало модным делать стартапы. У каждого второго разработчика есть свой. А в Rails сообществе ­— у каждого первого, наверное. И чтобы оставаться в тренде я тоже решил принять участие в разработке одного интересного сервиса.</p>
+
+<p>Небольшая история о том, как я докатился до такой жизни.</p>
+
+<!-- more -->
+
+
+<p>Как известно в нашей стране две проблемы и, если с первой ничего сделать нельзя, то иметь актуальную информацию о состоянии второй можно.</p>
+
+<p>Если кто-то еще не догадался, речь идет о ситуации на дорогах.</p>
+
+<p>В нашем городе есть несколько способов узнать о том, что происходит на дорогах. Можно послушать радио (2х2 и Дорожное), можно посмотреть Яндекс.Пробки, а можно почитать ICQ бот. Каждый из них в чём-то хорош, но ни один из них не подходил в полной мере моему другу, заядлому микроблогеру, <a href="https://twitter.com/vdv73rus">Дмитрию Вислову</a>.</p>
+
+<p>Неудобства были настолько заметными, что 20 сентября 2011 года ситуация достигла критической точки, и он с ещё двумя товарищами (<a href="https://twitter.com/realmyst">Александром Щербининым</a>, <a href="https://twitter.com/kostya_sokolov">Костей Соколовым</a>), пожертвовав законным перерывом на обед, сделал робота, который читает тот самый <strong>ICQ бот</strong> с информацией о дорогах и транслирует всё в специально созданный аккаунт <a href="https://twitter.com/Ulway">@Ulway</a>..</p>
+
+<p>Идея пришлась по душе многим из нашего окружения, твиттер аккаунт быстро набрал около 200 подписчиков, в основном из друзей, знакомых, знакомых знакомых и т.д. Техническая сторона вопроса была достаточно тривиальной, скрипт читал по <code>cron</code>у бот, парсил содержимое, сохранял в базу для избежания дубликатов и отправлял в твиттер.</p>
+
+<p>Через месяц успешной работы, основной разработчик начал свою хардкорную жизнь программиста и с головой ушёл в изучение Ruby/Rails. Какое-то время сервис поддерживали Юрий Токарев, Алексей Загайчук. Но затем в феврале 2012 года проект попал в мои руки. Попав в мои руки , скриптик сразу же был обёрнут в микрофреймворк <a href="http://silex.sensiolabs.org/">Silex</a>, что позволило немного упорядочить код.</p>
+
+<p>Серьёзно к проекту никто не относился, работы в основном проводились в обед и редко. Да и зачем? Просто небольшое удобство в основном для себя и друзей, и так проект жил. К середине Марта 2012 года в подписчиках было около 350 человек, не такой уж и значительный рост за 4 месяца.</p>
+
+<p>В среднем мы получали и публиковали 5-10 сообщений в сутки. Мало. Решили расширить список источников информации. Выбор пал на хештег #ulway. В нем обыватели нашего города иногда оставляли информацию о происшествиях. Там было не много материала, но хоть что-то. Схему работы придумали простую, раз в 10 минут PHP робот читает хештег, фильтрует мат и публикует от имени сервиса то, что должно пройти.</p>
+
+<p>Неактивно, но пошла популяризация самого хештега <strong>#ulway</strong>.</p>
+
+<p>Количество подписчиков начало расти. Из этого вытекало несколько задач:</p>
+
+<ul>
+<li>более сложная фильтрация с учётам смысловой нагрузки;</li>
+<li>сайт проекта с возможностью отправить сообщение с него;</li>
+<li>чтение сообщений из реплаев твиттера;</li>
+<li>рефакторинг бекенд части.</li>
+</ul>
+
+
+<p>Так появился <strong>ulway.net</strong>.</p>
+
+<p>Мы торопились, хотели закончить к конференции “Стачка!”, поэтому бекенд было решено не переписывать.</p>
+
+<p>Фронтэнд был написан на jQuery mobile. Мы хотели делать сразу приложение для мобильных телефонов, используя PhoneGap. Код был открыт, репозиторий и ныне на <a href="https://github.com/Andrew8xx8/ulway-mobile">GitHub</a>.</p>
+
+<p>Бекенд всё так же остался на <a href="http://silex.sensiolabs.org/">Silex</a>, к нему лишь прибавился нехитрый алгоритм оценки “полезности” сообщения. Состоит он из частотного словаря, на основе которого высчитывается рейтинг сообщения, в случае, если оно проходит определённый порог, установленный экспериментальным путём, то сообщение считается подходящим. Частотный словарь подстраивается на основе того какие слова были в том сообщении, которое прошло фильтр.</p>
+
+<p>К выступлению на <a href="http://www.slideshare.net/vdv73rus/ss-12567768">&ldquo;Стачке&rdquo;</a> фильтр и публикация сообщений работали. Сам доклад я пропустил, но он способствовал продвижению идеи в массы.</p>
+
+<p>Моя светлая сторона умоляла начать делать всё “как надо”. Под впечатлением “Стачки” хотелось сразу писать на erlang. Задача казалось бы как раз для него! Но неделя глубокого исследования этого вопроса показала</p>
+
+<ul>
+<li>освоить erlang быстро с моим уровнем подготовки не получится;</li>
+<li>работа со строками в erlang это ад.</li>
+</ul>
+
+
+<p>Объём быдлокода давил на моральные принципы, нужно было искать путь. И его, сам того не зная, подсказал Кирил Мокевнин. Вот <a href="https://twitter.com/mokevnin/status/222960857171247105">тут</a>.</p>
+
+<p>На любом языке одинаково можно писать как хорошие, так и плохие программы. Программа ­— это отражение модели мышления программиста в виде языка, понятного компьютеру, и для меня пришло время развивать новую модель мышления.</p>
+
+<p>Был использован <a href="http://getcomposer.org/">Composer</a> для управления зависимостями. В качестве основы
+остался <a href="http://silex.sensiolabs.org/">Silex</a>, но на этот раз я разобрался как работает <a href="http://silex.sensiolabs.org/doc/services.html">Dependency Injection</a> в нём. Был использован <a href="http://symfony.com/doc/2.0/components/console/introduction.html">Simfony::Console</a> для реализации взаимодействия с приложением через консоль. Для твиттера после долгих мучений подошёл лишь один пакет, но и его пришлось <a href="https://github.com/dg/twitter-php">допилить</a>.</p>
+
+<p>Фронтенд был переделан на Twitter Bootstrap, но только его главная страница. Мы оба ленились переделывать саму форму с JQuery Mobile, на ней было много JavaScript лапши. Форма была взята из предыдущей версии и в таком состоянии &ldquo;франкенштейна&rdquo; это проработало ещё какое-то время.</p>
+
+<p>Система работала достаточно стабильно. Подписчиков уже стало около 600. Люди стали активно публиковать свои сообщения.</p>
+
+<p>Нужно было доводить сервис до ума, но мы загорелись идеей расшириться в другие города. Наши желания никак не вписывалась в существующую архитектуру. Нужен был серьёзный веб фреймворк с низким порогом вхождения и развитой инфраструктурой.</p>
+
+<p>Мы приняли решение бросить разработку текущей вресии и начать делать всё на рельсах. Причина крылась не в том, что это сейчас модно, а в том, что в инфраструктуре Ruby/Rails больше гибких, удобных инструментов для быстрой разработки веб-приложений.</p>
+
+<p>После конференции RailsClub, которая проходила в нашем городе, мы пообщались с коллегами из Чебоксар, которым очень понравилась идея нашего сревиса и то, как он работает в Ульяновске. Они предложили свою помощь в популяризации в своём регионе. Идею также похвалили и ребята из <a href="http://evrone.ru/">http://evrone.ru/</a> С ними мы обменялись наклейкамми (Ulway на GistFolw) С этого же момента мы поняли, что приколюшка “для своих” вышла за рамки этого состояния. Ulway ­— это полноценный проект требующий больше сил и времени.</p>
+
+<p>Нужно было придумать название для новой системы, которое бы отражало общее отношение к городам. Так и сошлись на <a href="http://waytag.ru">Waytag.ru</a>.</p>
+
+<p>Следующий шаг, аренда VPS на <a href="http://clodo.ru">Clodo</a> и полное её администрирование через <a href="http://www.opscode.com/chef/">Chef</a>.</p>
+
+<p>Чтобы обеспечить быстрый и безболезненный переход в кратчайшие сроки уже на Rails, было сделана API модель, которая повторяла структуру старой базы. Старая система всё то, что отправляла в твиттер отправляла заодно и туда. Изменение базы данных в Rails осуществляется через специальные миграции, что позволило при переходе на новую версию просто их применить к существующей уже базе.</p>
+
+<p>Сама архитектура системы усложнилась. Теперь нет скриптов которые по
+<code>cron</code>&lsquo;у читают твиттер. У нас работает комплекс процессов-демонов запущенных под
+runit, которые получают сообщения от твиттера через <a href="https://dev.twitter.com/docs/streaming-apis">Twitter Streaming API</a>, осуществляют их фильтрацию и публикацию, но уже через <a href="https://dev.twitter.com/docs/api/1.1">Twitter Rest API</a>.</p>
+
+<p>Так же появилась няшная админка, в которой можно посмотреть, поискать, отредактировать, создать всё то, что есть внутри нашей базы (прощай PhpMyAdmin!).</p>
+
+<p>Внутри админки — частотный словарь, сообщения, блек-лист аккаунтов, сообщения  которых игнорируются, а также список улиц, ну и сами города со служебной информацией.</p>
+
+<p>9  января 2013 года система окончательно была запущена. Все старые версии отключены.</p>
+
+<p>Сейчас для Ульяновска в день публикуется около 15-30 сообщений, статистику за декабрь прошлого года можно заценить <a href="https://gist.github.com/4368800">тут</a>.</p>
+
+<p>Мы таже присутствуем и в &ldquo;офлайне&rdquo; Иногда мы раздаём наклейки и футболки. Иногда всем подряд, иногда особо отличившимся, но обэтом лучше напишет <a href="https://twitter.com/vdv73rus">Дмитрий Вислов</a>.</p>
+
+<p>В ближайшем будущем проект обретёт фирменный стиль, будет вести свой отдельный блог, обзаведётся поддоменами для городов, заново подружится с ICQ ботом и много чего ещё =)</p>
+
+<p>Наш сайт:</p>
+
+<ul>
+<li><a href="http://waytag.ru">http://waytag.ru</a></li>
+</ul>
+
+
+<p>Твиттеры:</p>
+
+<ul>
+<li><a href="https://twitter.com/WaytagRU">Твиттер проекта (@WaytagRu)</a>!</li>
+<li><a href="http://twitter.com/Chebway">Дорожная ситуация в Чебоксарах (@Chebway + #chebway)</a></li>
+<li><a href="http://twitter.com/Ulway">Дорожная ситуация в Ульяновске (@Ulway + #ulway)</a></li>
+</ul>
+
+
+<p>Почта для связи:</p>
+
+<p><a href="mailto:mail@waytag.ru">mail@waytag.ru</a></p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Плагин Link для Jekyll]]></title>
+    <link href="http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll/"/>
+    <updated>2012-12-21T01:19:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll</id>
+    <content type="html"><![CDATA[<p>Нужно было для одного статического сайта сделать так, чтобы все ссылки
+которые ведут на текущую открытую страницу помечались классом <code>current</code>.
+Для того что бы пользователь по структуре меню мог определить, где он
+находится.</p>
+
+<p>Я написал плагин для этого. <a href="https://github.com/Andrew8xx8/jekyll-link">https://github.com/Andrew8xx8/jekyll-link</a></p>
+
+<!-- more -->
+
+
+<p>Плагин добавляет новый тег <code>link</code> с помощью которого генерируется HTML
+код для ссылки, причём если адрес страницы в ссылке является частью или
+полностью совпадает с адресом той страницы на которой она расположена,
+то в неё добавится класс <code>current</code>.</p>
+
+<p>Например, имеем такой шаблон с меню:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>
+</span><span class='line'> <span class="nt">&lt;ul&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;li&gt;</span>\{% link /blog Blog %\}
+</span><span class='line'>   <span class="nt">&lt;li&gt;</span>
+</span><span class='line'>     {% link /about About %}
+</span><span class='line'>     <span class="nt">&lt;ul&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;li&gt;</span>{% link /about/author Author %}
+</span><span class='line'>     <span class="nt">&lt;/ul&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;/li&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/ul&gt;</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>На странице с автором (<code>/about/author</code>) сгенерируется такой код:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='html'><span class='line'>
+</span><span class='line'> <span class="nt">&lt;ul&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;/blog&quot;</span><span class="nt">&gt;</span>Blog<span class="nt">&lt;/a&gt;&lt;/li&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;li&gt;</span>
+</span><span class='line'>     <span class="nt">&lt;a</span> <span class="na">href=</span><span class="s">&quot;/about&quot;</span> <span class="na">class=</span><span class="s">&quot;current&quot;</span><span class="nt">&gt;</span>About<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>     <span class="nt">&lt;ul&gt;</span>
+</span><span class='line'>       <span class="nt">&lt;li&gt;&lt;a</span> <span class="na">href=</span><span class="s">&quot;/about/author&quot;</span> <span class="na">class=</span><span class="s">&quot;current&quot;</span><span class="nt">&gt;</span>Author<span class="nt">&lt;/a&gt;</span>
+</span><span class='line'>     <span class="nt">&lt;/ul&gt;</span>
+</span><span class='line'>   <span class="nt">&lt;/li&gt;</span>
+</span><span class='line'> <span class="nt">&lt;/ul&gt;</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Смешно, но документация с примерами к плагину занимет больше строк чем сам код.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Каталог Lib в Rails]]></title>
+    <link href="http://8xx8.ru/blog/2012/12/10/katalogh-lib-v-rails/"/>
+    <updated>2012-12-10T10:58:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/12/10/katalogh-lib-v-rails</id>
+    <content type="html"><![CDATA[<p>Однозначного и общеизвестного ответа на вопрос &ldquo;Что положить в либ?&rdquo;
+нет, обычно туда валится всё, что нельзя положить в другие места. Вопрос
+что с этим делать дальше.</p>
+
+<!-- more -->
+
+
+<p>Первое, что нужно сделать, подключить эту папку в автозагрузку в
+<code>config/application.rb</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">autoload_paths</span> <span class="o">+=</span> <span class="sx">%W(</span><span class="si">#{</span><span class="n">config</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="sx">/lib)</span>
+</span><span class='line'><span class="n">config</span><span class="o">.</span><span class="n">autoload_paths</span> <span class="o">+=</span> <span class="no">Dir</span><span class="o">[</span><span class="s2">&quot;</span><span class="si">#{</span><span class="n">config</span><span class="o">.</span><span class="n">root</span><span class="si">}</span><span class="s2">/lib/**/&quot;</span><span class="o">]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Затем тестирование.</p>
+
+<p>Плохая идея подключать эти тесты прямо в <code>test_helper.rb</code>, типа такого:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="no">Dir</span><span class="o">[</span><span class="no">Rails</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;test/lib/*.rb&quot;</span><span class="p">)</span><span class="o">].</span><span class="n">each</span> <span class="p">{</span><span class="o">|</span><span class="n">f</span><span class="o">|</span> <span class="nb">require</span> <span class="n">f</span><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Подключённые таким образом тесты будут выполнятся при любом раскладе,
+даже при запуске тестов определённого типа например <code>rake test:functionals</code>.</p>
+
+<p>Правильным решением этой задачи является подключение дополнительных
+тестов через Rake Task.</p>
+
+<p>Для этого нужно в создать или добавить в файл <code>lib/tasks/test.rake</code>
+новую задачу описывающую запуск дополнительных тестов:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">namespace</span> <span class="ss">:test</span> <span class="k">do</span>
+</span><span class='line'>  <span class="ss">Rails</span><span class="p">:</span><span class="ss">:SubTestTask</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="ss">:lib</span> <span class="o">=&gt;</span> <span class="s2">&quot;test:prepare&quot;</span><span class="p">)</span> <span class="k">do</span> <span class="o">|</span><span class="n">t</span><span class="o">|</span>
+</span><span class='line'>    <span class="n">t</span><span class="o">.</span><span class="n">libs</span> <span class="o">&lt;&lt;</span> <span class="s2">&quot;test&quot;</span>
+</span><span class='line'>    <span class="n">t</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="s1">&#39;test/lib/**/*_test.rb&#39;</span>
+</span><span class='line'>  <span class="k">end</span>
+</span><span class='line'><span class="k">end</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Теперь тесты доступны для запуска через <code>rake test:lib</code>.</p>
+
+<p>Далее если нужно добавить запуск этих тестов по умолчанию при запуске
+всех то дописываем ниже:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='ruby'><span class='line'><span class="n">lib_task</span> <span class="o">=</span> <span class="ss">Rake</span><span class="p">:</span><span class="ss">:Task</span><span class="o">[</span><span class="s2">&quot;test:lib&quot;</span><span class="o">]</span>
+</span><span class='line'><span class="n">test_task</span> <span class="o">=</span> <span class="ss">Rake</span><span class="p">:</span><span class="ss">:Task</span><span class="o">[</span><span class="ss">:test</span><span class="o">]</span>
+</span><span class='line'><span class="n">test_task</span><span class="o">.</span><span class="n">enhance</span> <span class="p">{</span> <span class="n">lib_task</span><span class="o">.</span><span class="n">invoke</span> <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Чтобы научить tconsole понимать наши тесты нужно добавить либо в проект,
+либо в домашнюю директорию файл <code>.tconsole</code>, в котором добавить lib как
+тип тестов. Моя конфигурация для Rails приложения:</p>
+
+<div><script src='https://gist.github.com/4249514.js'></script>
+<noscript><pre><code>TConsole::Config.run do |config|
+  config.include_paths = [&quot;./test&quot;, &quot;./lib&quot;]
+
+  config.file_sets = {
+    &quot;all&quot; =&gt; [
+      &quot;./test/unit/**/*_test.rb&quot;,
+      &quot;./test/functional/**/*_test.rb&quot;,
+      &quot;./test/integration/**/*_test.rb&quot;,
+      &quot;./test/lib/*_test.rb&quot;, 
+      &quot;./test/lib/**/*_test.rb&quot;
+    ], 
+    &quot;lib&quot; =&gt; [&quot;./test/lib/*_test.rb&quot;, &quot;./test/lib/**/*_test.rb&quot;],
+    &quot;units&quot; =&gt; [&quot;./test/unit/**/*_test.rb&quot;],
+    &quot;unit&quot; =&gt; [&quot;./test/unit/**/*_test.rb&quot;],
+    &quot;functionals&quot; =&gt; [&quot;./test/functional/**/*_test.rb&quot;],
+    &quot;functional&quot; =&gt; [&quot;./test/functional/**/*_test.rb&quot;], 
+    &quot;integration&quot; =&gt; [&quot;./test/integration/**/*_test.rb&quot;]
+  }
+end
+</code></pre></noscript></div>
+
+
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Открываем терминал правильно]]></title>
+    <link href="http://8xx8.ru/blog/2012/12/03/otkryvaiem-tierminal-pravilno/"/>
+    <updated>2012-12-03T14:01:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/12/03/otkryvaiem-tierminal-pravilno</id>
+    <content type="html"><![CDATA[<p>Я устал от того, что начав работу с проектом и открыв терминал, я вынужден каждый раз открывать вкладки и запускать в них однотипные команды. Отсутствие же адекватных названий вкладок, в случае, если открыто более одного проекта,  превращает навигацию по открытым терминалам в ад. Terminal, Terminale, Termina and so on&hellip;</p>
+
+<p>В связи с этим я решил привнести немного автоматизации в этот процесс.</p>
+
+<!-- more -->
+
+
+<p>Не секрет, что при запуске терминала можно указать опции, которые повлияют на его последующую работу. Наиболее интересные из них:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  --tab Open a new tab in the last-opened window with the default profile
+</span><span class='line'>  --hide-menubar Turn off the menubar
+</span><span class='line'>  --maximize Maximise the window
+</span><span class='line'>  -e, --command Execute the argument to this option inside the terminal
+</span><span class='line'>  -t, --title=TITLE Set the terminal title</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Исходя из этого команда для открытия терминала без строки меню с двумя вкладками и открытыми в них vim и zsh выглядит так:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  gnome-terminal --maximize --hide-menubar --tab --tab</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Добавим названия заголовков:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  gnome-terminal --maximize --hide-menubar --tab -t "VIM | myproj" --tab -t "CONSOLE | myproj"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Добавим исполнение команд:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>  gnome-terminal --maximize --hide-menubar --tab -e "zsh -c 'cd ~/myproj && vim'" -t "VIM | myproj" --tab -e "zsh -c 'cd ~/myproj; exec zsh" -t "CONSOLE | myproj"</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Важный аспект состоит в том, что вкладка закрывается сразу же после выполнения команды, поэтому если нужно загрузить shell, следует исползовать exec.</p>
+
+<p>Писать такую длинную команду каждый раз неудобно, поэтому лучше написать скрипт для загрузки.
+<a href="https://gist.github.com/4183308">Вот мой</a></p>
+
+<p><img src="http://8xx8.ru/images/content/open-terminal.png" title="[Так выглядит мой вариант]" ></p>
+
+<p>P.S.
+* Более подробно о доступных опциях терминала можно узнать выполнив: <code>gnome-terminal --help-all</code>
+* Для Linux Mint все опции в силе. Просто используйте mate-terminal вместо gnome-terminal
+* Для bash всё тоже самое, только zsh следует изменить на bash, либо на другой ваш любимый Shell.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[CS-Cart 3.0: Динамические объекты в менеджере блоков]]></title>
+    <link href="http://8xx8.ru/blog/2012/05/24/cs-cart-3-dot-0-dinamichieskiie-obiekty-v-mieniedzhierie-blokov/"/>
+    <updated>2012-05-24T13:51:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/05/24/cs-cart-3-dot-0-dinamichieskiie-obiekty-v-mieniedzhierie-blokov</id>
+    <content type="html"><![CDATA[<p>Динамический объект в менеджере блоков &ndash; это любой объект карты для которого можно сменить контект какого-либо блока и его статус, на детальной странице этого объекта.</p>
+
+<!-- more -->
+
+
+<p>В стандартной поставке уже определены 5 видов динамических объектов, это Продукты, Страницы, Категории, Компании (только для редакции Multivendor), Новости.</p>
+
+<h2>Прикладное значение</h2>
+
+<p>Рассмотрим данный функционал на примере продуктов, потому как для всего остального это будет работать схожим образом.</p>
+
+<p>На странице редактирования продукта, при изменении контента блока, он будет сохраняться именно для этого продукта, причём затем при редактировании контента этого же блока, снизу будет отображаться информация о том, где контент был изменён и дополнительный чекбокс, установив который можно применить изменённый контент глобально.</p>
+
+<p>Так же при включении/выключении блока на странице редактирования продутка, его состаняние будет сохраняться именно для этого продукта.</p>
+
+<p>В менеджере блоков на локации с dispatch=products.view, при редактировании любого блока, у него есть дополнительная вкладка Status, на которой можно задать для каких-либо продуктов статус отличный от установленного по умолчанию, т.е. включить блок где-то, если он выключен глобально и наоборот.</p>
+
+<h2>Принцип работы</h2>
+
+<p>Функционал динамических объектов реализуется в блок менеджере автоматически по средствам описания объекта в схеме dynamic_objects, по этому при желании можно дополнить эту схему в своём аддоне любым дополниительным объектом, как например расширяет общую схему аддон News &amp; Emails.</p>
+
+<p>Описание схемы на примере продуктов:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">&lt;?</span><span class="nx">php</span>
+</span><span class='line'><span class="k">array</span><span class="p">(</span>
+</span><span class='line'>  <span class="c1">// Название динамического объекта, будет использоваться в качестве object_type</span>
+</span><span class='line'>  <span class="s1">&#39;products&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>    <span class="c1">// Страница редактирования динамического объекта, на которой должна отобразиться вкладка Blocks в административной части сайта</span>
+</span><span class='line'>    <span class="s1">&#39;admin_dispatch&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;products.update&#39;</span><span class="p">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Адрес страницы на которой в клинтской зоне и в панели управления блоками будет доступна работа с динамическим объектом</span>
+</span><span class='line'>    <span class="s1">&#39;customer_dispatch&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;products.view&#39;</span><span class="p">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Ключ в $_REQUEST по которому будет определяться идентификатор объекта</span>
+</span><span class='line'>    <span class="s1">&#39;key&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;product_id&#39;</span><span class="p">,</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="c1">// Настройки пикера, который будет использоваться в административной части сайта</span>
+</span><span class='line'>    <span class="s1">&#39;picker&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pickers/products_picker.tpl&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;picker_params&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>      <span class="s1">&#39;type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;links&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="p">),</span>
+</span><span class='line'>  <span class="p">),</span>
+</span><span class='line'><span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Когда пользователь запрашивает, напрмер, страницу с <code>dispatch=products.view</code>, то магазин определяет, что эта страница принадлежит динамическому объекту products и ищет в пришедших в скрипт параметрах product_id. Если такой находится, то все данные для генерации страницы будут запрошены через API блоков с указанием соответствующего типа и идентификатора, если не был по диспатчу найден тип блока в схеме или ключевой параметр, то данные будут генерироваться без учёта динамического объекта, то есть выведется всё со значениями установленными глобально.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Схема блоков в CS-Cart 3.0]]></title>
+    <link href="http://8xx8.ru/blog/2012/04/17/skhiema-blokov-v-cs-cart-3-dot-0/"/>
+    <updated>2012-04-17T10:48:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/04/17/skhiema-blokov-v-cs-cart-3-dot-0</id>
+    <content type="html"><![CDATA[<p>Менеджер блоков в Cs-cart 3.0 достаточно сложная штука. И я хотел бы сделать попытку
+объяснить как все таки с ним работать.</p>
+
+<!-- more -->
+
+
+<h2>Файлы</h2>
+
+<ul>
+<li><strong>block_cache_properties.php</strong> — глобальные апдейт хендлеры для кеша блоков;</li>
+<li><strong>dispatch_descriptions.php</strong> — список диспатчей и соответсвтующих лангвар. Нужно только
+для генерации списка для поля Dispatch при добавлении/редактировании локации;</li>
+<li><strong>blocks.php</strong> &ndash; основная схема блоков;</li>
+<li><strong>dynamic_objects.php</strong> — описание динамических объектов;</li>
+<li><strong>fillings.php</strong> — дополнительные параметры для филингов;</li>
+<li><strong>templates.php</strong> — дополнительные параметры лдя шаблонов.</li>
+</ul>
+
+
+<h2>Основая схема</h2>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>  <span class="s1">&#39;тип блока&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;settings&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Список настроек (а)&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;templates&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Список шаблонов (б)&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;content&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Список контента (в)&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;wrappers&#39;</span> <span class="o">=&gt;</span><span class="s1">&#39; Список враперов (г)&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;icon&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Путь до иконки&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;cache&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Параметры кеша, если отсутствует, то блок не кешируется.&#39;</span>
+</span><span class='line'>  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>а)</em> Сам блок может иметь настройки которые будут задаваться на странице редактирования
+блока в панели администрирования на вкладке settings, так же настройки могут иметь шаблоны
+и филлинги. на странице редактирвоания блока они все отображаются в разных местах, но в
+итоге хранятся в массиве properties блока и к ним можно получить доступ из шаблона. Так же
+они передаются в функцию получения списка элементов для перечисляемого типа.</p>
+
+<p>Список настроек предсьтавляет сабой набор пар типа ключ => значение, где ключём будет имя
+настройки. Оответсвтенно этому имени должна быть определена языковая переменная которая
+определяет название при выводе этой настройки.</p>
+
+<p>Значемнием будет массив параметров определяющих эту настройку:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="s1">&#39;имя_настройки&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;remove_indent&#39;</span>   <span class="o">=&gt;</span> <span class="s1">&#39;Если истинно, то при отображении в админке у настройки не будет отступа справа&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;required&#39;</span>        <span class="o">=&gt;</span> <span class="s1">&#39;Если истинно, то в настройках блока поле будет обязательно для заполнения&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;option_name&#39;</span>     <span class="o">=&gt;</span> <span class="s1">&#39;Имя языковой переменной для названия, если не задано в качестве него будет использоваться имя_настройки&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;default_value&#39;</span>   <span class="o">=&gt;</span> <span class="s1">&#39;Значение по умолчанию&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;values&#39;</span>          <span class="o">=&gt;</span> <span class="s1">&#39;Список вариантов настройки. Массив пар ключ =&gt; значение для настроек типа selectbox, multiple checkboxes&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;no_lang&#39;</span>       <span class="o">=&gt;</span> <span class="s1">&#39;Если истинно, то при отображении в админке у списка вариантов занчение варианта будет выводится как есть, иначе интерпретирвоанться как языковая переменная&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;values_settings&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Применяется только с настройкой типа selectbox. В этом параметре задаётся список вариантов и дополнительные настройки, которые будут появлятся только при выборе определённыз вариантов родительского списка. В качестве примера см. схему блока аддона Rss Feed.&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;picker&#39;</span>        <span class="o">=&gt;</span><span class="s1">&#39; Шаблон пикера. Применяется только с типом настройки picker.&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;picker_params&#39;</span>   <span class="o">=&gt;</span> <span class="s1">&#39;Настройки пикера. Применяется только с типом настройки picker.&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;template&#39;</span>        <span class="o">=&gt;</span> <span class="s1">&#39;Путь к шаблону. применятеся только с типом настройки &quot;template&quot;&#39;</span>
+</span><span class='line'>  <span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Типы настроек:</strong></p>
+
+<ul>
+<li><strong>checkbox</strong> — гuалочка;</li>
+<li><strong>input</strong> — поле ввода;</li>
+<li><strong>input_long</strong> — поле ввода с классом input-text-long;</li>
+<li><strong>multiple_checkboxes</strong> — список галочек;</li>
+<li><strong>text</strong> — поле ввода текса типа WYSIWYG;</li>
+<li><strong>simple_text</strong> — обычное поле ввода текста без WYSIWYG;</li>
+<li><strong>picker</strong> — пикер;</li>
+<li><strong>template</strong> — шаблон. Вместо сеттинги будет тоображаться тот шаблон, который указан в
+параметре template;</li>
+<li><strong>enum</strong> — перечесление объектов. Используется только в секци content</li>
+</ul>
+
+
+<p><em>б)</em> Список шаблонов может быть:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>  <span class="s1">&#39;путь_к_шаблону&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;settings&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Список настроек (см. ниже)&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;fillings&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Массив из филлингов которые доступны для этого шаблона (все сотальные филлинги будут автоматически исключены из списка)&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;params&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Массив параметров, которые будут переданы в функцию получения элементов блока&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;bulk_modifier&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Групповой модификатор. Функция которая применится к элементам блока перед выводом&#39;</span>
+</span><span class='line'>  <span class="p">),</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Всё что есть в параметре &lsquo;template&rsquo; в схеме блоков будет объединено с параметрами
+заданными в схеме templates.php, при генерации схемы, ключём является путь к шаблону.</p>
+
+<p>Соответственно по ключу &lsquo;template&rsquo; в схеме блоков может быть:</p>
+
+<ul>
+<li><em>А)</em> Список путей к шаблонам с непосредственно полным переченем параметров, в таком
+случае не потребуется ничего писать в templates.php;</li>
+<li><em>Б)</em> Список путей к шаблонам, а все параметры по соотвествующим ключам указаны в
+templates.php;</li>
+<li><em>В)</em> Путь к папке с шаблонами, а все параметры по соотвествующим ключам указаны в
+templates.php;</li>
+<li><em>Г)</em> Название функции которая возвращает список шаблонов, а все параметры по
+соотвествующим ключам указаны в templates.php или так же возвращаются функцией.</li>
+</ul>
+
+
+<p><em>в)</em> В новом блок менеджере любой блок может содержать произвольное колличество переменных
+которые затем передадуться в шаблон, например имея такой блок:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>  <span class="s1">&#39;test_block&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;content&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>      <span class="s1">&#39;some_value&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span>
+</span><span class='line'>        <span class="s1">&#39;type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;text&#39;</span><span class="p">,</span>
+</span><span class='line'>      <span class="p">)</span>
+</span><span class='line'>    <span class="p">)</span>
+</span><span class='line'>  <span class="p">)</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>В настроках блока в панели администрирования появится поле ввода в которое можно ввести
+значение. При отображении блока в кастомерке в шаблоне этого блока будет доступна
+переменная <code>{$some_value}</code> значение которой задано в админке.</p>
+
+<p>В качестве элемента контента может быть любая настройка (см. пункт натсроек), специальный
+тип перечисление (<code>enum</code>), функция.</p>
+
+<p>С настройками всё просто, то что пользователь сохранит в админке то и пойдёт в шаблон.</p>
+
+<p>Тип перечисление нужен для того чтобы определять списки элементов с различными видами
+заполнения (<code>fililng</code>), например список продуктов или категорий.</p>
+
+<p>Параметры типа <code>enum</code>:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>  <span class="s1">&#39;имя_переменной&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;enum&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;object&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Название динамического объекта в схеме.&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;items_function&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;Функция генерации элементов&#39;</span>
+</span><span class='line'>    <span class="s1">&#39;fillings&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span> <span class="c1">// Филлинги, т.е. типы заполнения.</span>
+</span><span class='line'>      <span class="s1">&#39;manually&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span> <span class="c1">// Ручной тип. Требует наличия параметров пикера.</span>
+</span><span class='line'>        <span class="s1">&#39;picker&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;pickers/companies_picker.tpl&#39;</span><span class="p">,</span>
+</span><span class='line'>        <span class="s1">&#39;picker_params&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>          <span class="s1">&#39;multiple&#39;</span> <span class="o">=&gt;</span> <span class="k">true</span><span class="p">,</span>
+</span><span class='line'>        <span class="p">),</span>
+</span><span class='line'>      <span class="p">),</span>
+</span><span class='line'>      <span class="s1">&#39;some_another_filling&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>        <span class="s1">&#39;params&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="p">),</span>
+</span><span class='line'>      <span class="p">),</span>
+</span><span class='line'>    <span class="p">),</span>
+</span><span class='line'>  <span class="p">),</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Для неручного филлинга можно задать секцию params в которой будет список теъх параметров
+который в итоге будет передан в функцию генерации элементов, так же для филлинга можно
+задать список настроек по ключу settings, аналогично шаблонам или самим блокам.</p>
+
+<p>Если в качестве элемента контента используется функция, то значение этой переменной будет
+равно результату который вернёт эта функция. Формат определяни таков:</p>
+
+<div><script src='https://gist.github.com/2783014.js?file=function.php'></script>
+<noscript><pre><code>&lt;?php
+    &#39;имя_переменной&#39; =&gt; array (
+        &#39;type&#39; =&gt; &#39;function&#39;,
+        &#39;function&#39; =&gt; array(&#39;fn_get_languages&#39;[, &#39;param1&#39;][, &#39;param2&#39;][..]),
+    ),</code></pre></noscript></div>
+
+
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'>  <span class="s1">&#39;имя_переменной&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span> <span class="p">(</span>
+</span><span class='line'>    <span class="s1">&#39;type&#39;</span> <span class="o">=&gt;</span> <span class="s1">&#39;function&#39;</span><span class="p">,</span>
+</span><span class='line'>    <span class="s1">&#39;function&#39;</span> <span class="o">=&gt;</span> <span class="k">array</span><span class="p">(</span><span class="s1">&#39;fn_get_languages&#39;</span><span class="p">[,</span> <span class="s1">&#39;param1&#39;</span><span class="p">][,</span> <span class="s1">&#39;param2&#39;</span><span class="p">][</span><span class="o">..</span><span class="p">]),</span>
+</span><span class='line'>    <span class="p">),</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>г)</em> В параметре wrapeprs как и в шаблонах может быть либо список враперов, либо путь к
+папке с ними. дополнительные настройки у них отсутствуют.</p>
+
+<p><em>д)</em> Если блок должен быть кешируемым то нужно определить ему свойство cache в схеме. В
+котором по ключу update_handlers перечислить список таблиц, при обновлении которых будет
+обновляться кэш.</p>
+
+<p>В новом менеджере блоков все те статические блоки объединены в так называемый блок
+template у коготорого есть только одно свойство  template в котором можно выбрать
+какой-либо шаблон для отображения из папки blocks/static_templates. Если вам нужно именно
+такой блок, то в аддоне достаточно создать папку blocks/static_templates и разместить там
+свой шаблон, который автоматичнски добавится к остальным. В принципе этот способ
+распространяется для всех основных блоков карты, расширить список их шаблонов можно по
+средствам добавления соотвествующей папки в аддоне.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Резиновый магазин]]></title>
+    <link href="http://8xx8.ru/blog/2012/03/20/riezinovyi-maghazin/"/>
+    <updated>2012-03-20T12:35:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/03/20/riezinovyi-maghazin</id>
+    <content type="html"><![CDATA[<p>Начиная с версии CS-Cart 3.0 используется новая философия блоков и блок менеджера в частности.</p>
+
+<p>Ключевым моментом здесь является использование CSS фреймворка 960gs (сайт проекта <a href="http://960.gs">http://960.gs</a>).</p>
+
+<!-- more -->
+
+
+<p>Данный фреймворк предназначен для быстрой, эффективной и кроссбраузерной вёрски веб-контента по модульной сетке размером 960 пикселей с разделением на 12 или 16 колонок.</p>
+
+<p>В нашем случае модульная сетка нужна для того что бы можно было безпрепятственно создавать любую структуру для размещения блоков на любой странице.</p>
+
+<p>К сожалению данный потход в виду своей гибкости с одной стороны имеет ограничение, ширина контента страницы получается фиксированной.</p>
+
+<p>Решить эту проблему мужно используя другой CSS файл определяющий правила для классов фреймворка.</p>
+
+<p>Есть такой проект <a href="http://www.designinfluences.com/fluid960gs/">http://www.designinfluences.com/fluid960gs/</a> в нём реализовано как раз возможность растягивания лэйаута по ширине.</p>
+
+<p>Для того что бы подключить у себя на сайте, нужно заменить скачать файл <a href="https://raw.github.com/bauhouse/fluid960gs/master/css/grid.css">https://raw.github.com/bauhouse/fluid960gs/master/css/grid.css</a> с репозитория проекта и заменить оригинальный файл карты your_skin_path/customer/css/960/960.css на скачанный.</p>
+
+<p>Но при использовани такого потхода возможна проблема из-за большой вложенности с шириной в процентах, например grid_10 внутри grid_10 будет брать процент от ширины родителя, а не фиксированную как в стандартном 960.gs изза этого вложенный грид будет чуть меньше.</p>
+
+<p>Для того чтобы это исправить можно вручную добавить вложенным гридам нужную ширину, а родительскому гриду установить content-aligment full-width.</p>
+
+<p>На примере стандартной шапки cs-cart это будет выглядеть так:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='css'><span class='line'>  <span class="nt">html</span> <span class="nc">.helper-container</span> <span class="nc">.full-width</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">width</span><span class="o">:</span> <span class="m">100</span><span class="o">%</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nt">html</span> <span class="nc">.helper-container</span> <span class="nc">.top-links-grid</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">width</span><span class="o">:</span> <span class="m">98</span><span class="o">.</span><span class="m">0</span><span class="o">%</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nt">html</span> <span class="nc">.helper-container</span> <span class="nc">.search-block-grid</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">width</span><span class="o">:</span><span class="m">54</span><span class="o">.</span><span class="m">25</span><span class="o">%</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'>  <span class="nt">html</span> <span class="nc">.helper-container</span> <span class="nc">.cart-content-grid</span> <span class="p">{</span>
+</span><span class='line'>    <span class="k">width</span><span class="o">:</span><span class="m">41</span><span class="o">.</span><span class="m">75</span><span class="o">%</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Тем же способом можно подключать файлы созданные с помощю сервиса <a href="http://grids.heroku.com/">Grids</a>. Он позволяет создавать сетку различной фиксированной длинны.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Быстрый способ передать Template Variable (TV) в снипет в MODx Revolution]]></title>
+    <link href="http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution/"/>
+    <updated>2012-01-12T13:59:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/01/12/bystryi-sposob-pieriedat-template-variable-tv-v-snipiet-v-modx-revolution</id>
+    <content type="html"><![CDATA[<p>Что бы быстро и просто передать Template Variable (TV) параметр в снипет в MODx Revolution достаточно передать его как параметр при вызове снипета. Например создадим параметр TV и назовём его MyColor затем передадим в снипет его таким образом при вызове:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="p">[[</span><span class="nx">MySnippet</span><span class="o">?</span> <span class="o">&amp;</span><span class="nx">color</span><span class="o">=</span><span class="sb">`[*MyColor*]`</span><span class="p">]]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Когда система будет обрабатывать шаблон она подставит значение параметра в вызов и оно передасться в сам снипет. Код MySnippet:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="k">echo</span> <span class="s1">&#39;You have entered: &#39;</span><span class="o">.</span><span class="nv">$color</span><span class="p">;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[ZSH: неработающие кнопки Home и End]]></title>
+    <link href="http://8xx8.ru/blog/2011/12/03/zsh-nierabotaiushchiie-knopki-home-i-end/"/>
+    <updated>2011-12-03T13:54:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2011/12/03/zsh-nierabotaiushchiie-knopki-home-i-end</id>
+    <content type="html"><![CDATA[<p>При доступе к серверу из Putty или терминала Gnome иногда не работают кнопки Home и End.</p>
+
+<p>Решение простое. Нужно в файле ~/.zshrc добавить эти строки:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>bindkey "^[[1~" beginning-of-line
+</span><span class='line'>bindkey "^[[4~" end-of-line
+</span><span class='line'>
+</span><span class='line'>bindkey "^[OH" beginning-of-line
+</span><span class='line'>bindkey "^[OF" end-of-line</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Первые две для Putty другие для Gnome (Mate) Trerminal.</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Полезные в работе регулярные выражения]]></title>
+    <link href="http://8xx8.ru/blog/2011/11/08/polieznyie-v-rabotie-rieghuliarnyie-vyrazhieniia/"/>
+    <updated>2011-11-08T00:26:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2011/11/08/polieznyie-v-rabotie-rieghuliarnyie-vyrazhieniia</id>
+    <content type="html"><![CDATA[<p>Зачастую в рабочем процессе требуется проверить данные введённые пользователем или полученные из другого источника.</p>
+
+<p>Данная задача элегантно решается с помощью регулярных выражений.</p>
+
+<!-- more -->
+
+
+<p>Привожу далее список регулярных выражений используемых мной. Данный список будет пополняться с течением времени. Если есть предложения чем пополнить его, пишите.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * Юзернейм</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> * Буквы, цифры, дефисы и подчёркивания, от 3 до 16 символов.</span>
+</span><span class='line'><span class="cm"> * Начинаться должно всегда с буквы латинского алффавита</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match</span><span class="p">(</span><span class="s1">&#39;%^[a-z][a-z0-9_-]{3,16}$%&#39;</span><span class="p">,</span> <span class="nv">$userName</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * Пароль</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> * То же что и юзер нейм только от 6 символов и может начинаться с цыфры</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match</span><span class="p">(</span><span class="s1">&#39;%^[a-z0-9_-]{6,18}$%&#39;</span><span class="p">,</span> <span class="nv">$password</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * XML тег</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> * За открывающей скобкой &lt; должно стоять слово из букв — имя элемента, затем могут быть атрибуты</span>
+</span><span class='line'><span class="cm"> * — любые символы, кроме закрывающей скобки &gt;. Далее — любой текст (содержимое) и закрывающий тэг,</span>
+</span><span class='line'><span class="cm"> * т.е. &lt;имя /&gt;, или как минимум один пробел, слэш и закрывающаю скобка (самозакрывающийся тэг).</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match</span><span class="p">(</span><span class="s1">&#39;%&lt;([a-z]+)([^&gt;]+)*(?:&gt;(.*)&lt;/\1&gt;|\s+/&gt;)$%&#39;</span><span class="p">,</span> <span class="nv">$xmlTag</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * Email</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> * Общий вид — логин@поддомен.домен. Логин, как и поддомен — слова из букв, цифр, подчёркиваний,</span>
+</span><span class='line'><span class="cm"> * дефисов и точек. А домен (имеется в виду 1го уровня) — это от 2 до 6 букв и точек.</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match</span><span class="p">(</span><span class="s1">&#39;%^([a-z0-9_\.-]+)@([a-z0-9_\.-]+)\.([a-z\.]{2,6})$%&#39;</span><span class="p">,</span> <span class="nv">$email</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * URL</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> * Первым делом — необязательный протокол (http:// или https://), затем последовательность букв,</span>
+</span><span class='line'><span class="cm"> * цифр, дефисов, подчёркиваний и точек (домены уровня &gt; 1), потом домен нулевого уровня (от 2 до</span>
+</span><span class='line'><span class="cm"> * 6 букв и точек) и, наконец, файловая структура — набор слов из букв, цифр, дефисов, подчёркиваний</span>
+</span><span class='line'><span class="cm"> * и точек со слэшем в конце. Всё это может завершаться опять-таки слэшем.</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match</span><span class="p">(</span><span class="s1">&#39;%^(https?://)?([\da-z\.-]+)\.([a-z\.]{2,6})([/\w \.-]*)*/?$%&#39;</span><span class="p">,</span> <span class="nv">$url</span><span class="p">);</span>
+</span><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * IP адрес</span>
+</span><span class='line'><span class="cm"> *</span>
+</span><span class='line'><span class="cm"> * 4 группы цифр (от 1 до 3 цифр в каждой) разделены точками. Если группа состоит из 3 символов,</span>
+</span><span class='line'><span class="cm"> * то первый из них — 1 или 2; если 1, то остальные от 0 до 9, а если 2 — то второй от 0 до 5;</span>
+</span><span class='line'><span class="cm"> * если второй символ от 0 до 4, то третий — от 0 до 9, а если второй 5 — то третий от 0 до 5.</span>
+</span><span class='line'><span class="cm"> * Если же группа состоит из 2 символов, то первый — от 1 до 9, второй — от 0 до 9. В случае</span>
+</span><span class='line'><span class="cm"> * односимвольной группы этим символом может быть цифра от 1 до 9.</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match</span><span class="p">(</span><span class="s1">&#39;%^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$%&#39;</span><span class="p">,</span> <span class="nv">$ip</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="cm">/*</span>
+</span><span class='line'><span class="cm"> * Комментаррии CSS</span>
+</span><span class='line'><span class="cm"> * Находим первое вхождение слеш звёздочка, далее берём любой символ или последовательность</span>
+</span><span class='line'><span class="cm"> * слеш звёздочка, пока не встретится последовательность звёздочка слеш. Квантификатор не жадный, по этому</span>
+</span><span class='line'><span class="cm"> * матчит ближайшие открывающие и закгрывающие вхождения оставляя внутри открывающие</span>
+</span><span class='line'><span class="cm"> */</span>
+</span><span class='line'>    <span class="nb">preg_match_all</span><span class="p">(</span><span class="s2">&quot;%/\*(.|[^/*])*?\*/\s+%i&quot;</span><span class="p">,</span> <span class="nv">$cssCode</span><span class="p">,</span> <span class="nv">$comments</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[Catchable Fatal Error после обновления до MODx 2.2.2]]></title>
+    <link href="http://8xx8.ru/blog/2011/10/03/catchable-fatal-error-poslie-obnovlieniia-do-modx-2-dot-2-2/"/>
+    <updated>2011-10-03T13:57:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2011/10/03/catchable-fatal-error-poslie-obnovlieniia-do-modx-2-dot-2-2</id>
+    <content type="html"><![CDATA[<p>После обновления до 2.2.2 в админской зоне стала появляться такая ошибка:</p>
+
+<figure class='code'><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class=''><span class='line'>Catchable fatal error: Argument 1 passed to xPDOObject::load() must be an instance of xPDO, instance of modX given in core/xpdo/om/xpdoobject.class.php on line 404</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Очень долго думал как решить. Оказалось суть в том, что при выходе из скриптанеправильно обрабатываются хендлеры повешенные на сессию. Что бы это исправить нужно добавить перед каждым выовом exit() в файлах /manager/min/index.php и /manager/min/lib/Minify.php вот такую строку:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='php'><span class='line'><span class="o">@</span><span class="nb">session_write_close</span><span class="p">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Возможно есть ещё места где может понадобиться такой &ldquo;хак&rdquo;.</p>
+]]></content>
+  </entry>
+  
+</feed>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Tag: plugin | 8xx8 (Андрей Кулаков)]]></title>
+  <link href="http://8xx8.ru/tags/plugin/atom.xml" rel="self"/>
+  <link href="http://8xx8.ru/"/>
+  <updated>2017-12-14T00:16:50+07:00</updated>
+  <id>http://8xx8.ru/</id>
+  <author>
+    <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Плагин link для Jekyll]]></title>
+    <link href="http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll/"/>
+    <updated>2012-12-21T01:19:00+07:00</updated>
+    <id>http://8xx8.ru/blog/2012/12/21/plaghin-link-dlia-jekyll</id>
+    <content type="html"><![CDATA[<p>Нужно было для одного статического сайта сделать так, чтобы все ссылки
+которые ведут на текущую открытую страницу помечались классом <code>current</code>.
+Для того что бы пользователь по структуре меню мог определить, где он
+находится.</p>
+
+<p>Я написал плагин для этого. <a href="https://github.com/Andrew8xx8/jekyll-link">https://github.com/Andrew8xx8/jekyll-link</a></p>
+
+<!-- more -->
+
+
+<p>Плагин добавляет новый тег <code>link</code> с помощью которого генерируется HTML
+код для ссылки, причём если адрес страницы в ссылке является частью или
+полностью совпадает с адресом той страницы на которой она расположена,
+то в неё добавится класс <code>current</code>.</p>
+
+<p>Например, имеем такой шаблон с меню:</p>
+
+<p>```html
+
+ <ul>
+   <li>{% link /blog Blog %}
+   <li></p>
+
+<pre><code> {% link /about About %}
+ &lt;ul&gt;
+   &lt;li&gt;{% link /about/author Author %}
+ &lt;/ul&gt;
+</code></pre>
+
+<p>   </li>
+ </ul>
+
+```</p>
+
+<p>На странице с автором (<code>/about/author</code>) сгенерируется такой код:</p>
+
+<p>```html
+
+ <ul>
+   <li><a href="http://8xx8.ru/blog">Blog</a></li>
+   <li></p>
+
+<pre><code> &lt;a href="http://8xx8.ru/about" class="current"&gt;About&lt;/a&gt;
+ &lt;ul&gt;
+   &lt;li&gt;&lt;a href="http://8xx8.ru/about/author" class="current"&gt;Author&lt;/a&gt;
+ &lt;/ul&gt;
+</code></pre>
+
+<p>   </li>
+ </ul>
+
+```</p>
+
+<p>Смешно, но документация с примерами к плагину занимет больше строк чем сам код.</p>
+]]></content>
+  </entry>
+  
+</feed>
