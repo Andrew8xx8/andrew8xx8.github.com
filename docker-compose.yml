@@ -1,0 +1,5 @@
+blog:
+  build: .
+  volumes:
+    - ./:/usr/src/app
+  environment:
