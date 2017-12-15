@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Как потратить свои изменения в git"
-date: 2016-10-06 11:26:29 +0400
+date: 2017-12-15 11:26:29 +0400
 comments: true
 categories: Git
 tags:
