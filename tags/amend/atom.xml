@@ -4,7 +4,7 @@
   <title><![CDATA[Tag: amend | 8xx8 (Андрей Кулаков)]]></title>
   <link href="http://8xx8.ru/tags/amend/atom.xml" rel="self"/>
   <link href="http://8xx8.ru/"/>
-  <updated>2017-12-15T17:33:28+07:00</updated>
+  <updated>2017-12-15T17:44:03+07:00</updated>
   <id>http://8xx8.ru/</id>
   <author>
     <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Как потратить свои изменения в git]]></title>
-    <link href="http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git/"/>
-    <updated>2016-10-06T14:26:29+07:00</updated>
-    <id>http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git</id>
+    <link href="http://8xx8.ru/blog/2017/12/15/how-to-waste-your-changes-in-git/"/>
+    <updated>2017-12-15T14:26:29+07:00</updated>
+    <id>http://8xx8.ru/blog/2017/12/15/how-to-waste-your-changes-in-git</id>
     <content type="html"><![CDATA[<p><strong>TL;DR</strong> При изменении коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в другую ветку.</p>
 
 <p>Иначе, если вы полностью отмените сделанные в файле изменения, то он пропадет из дифа этого коммита, и при повторном мерже с ним ничего не произойдет.  Все будет так, как и было в целевой  ветке до мержа. <code>git merge</code> будет говорить Already up-to-date, но содержимое файлов будет разным в этих ветках.</p>
@@ -143,7 +143,7 @@ I need to be here!
 <p>```bash
 /tmp/git_fuckup[feature] $ g show a12625d
 commit a12625df8415a45f84a018532e295f6c8421238f
-Author: Andreww8xx8 <a href="&#109;&#97;&#105;&#108;&#116;&#x6f;&#58;&#x61;&#118;&#107;&#64;&#x38;&#x78;&#120;&#x38;&#x2e;&#x72;&#117;">&#97;&#118;&#107;&#64;&#56;&#120;&#120;&#x38;&#x2e;&#x72;&#117;</a>
+Author: Andreww8xx8 <a href="&#109;&#97;&#105;&#108;&#116;&#x6f;&#x3a;&#x61;&#x76;&#107;&#x40;&#x38;&#120;&#x78;&#x38;&#46;&#114;&#117;">&#97;&#118;&#107;&#x40;&#56;&#120;&#120;&#56;&#x2e;&#114;&#x75;</a>
 Date:   Wed Dec 13 23:09:53 2017 +0700</p>
 
 <pre><code>Texts added
@@ -159,7 +159,7 @@ index e69de29..c20dfcd 100644
 </code>bash
 /tmp/git_fuckup[feature] $ g show 551d298
 commit 551d2989dc60290122d7853c3373b0e0e09757ce
-Author: Andreww8xx8 <a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#x6f;&#58;&#97;&#118;&#x6b;&#64;&#56;&#120;&#x78;&#56;&#46;&#114;&#x75;">&#x61;&#118;&#x6b;&#x40;&#56;&#120;&#120;&#x38;&#46;&#x72;&#117;</a>
+Author: Andreww8xx8 <a href="&#x6d;&#97;&#x69;&#x6c;&#116;&#x6f;&#x3a;&#97;&#118;&#107;&#x40;&#x38;&#120;&#x78;&#x38;&#x2e;&#114;&#x75;">&#x61;&#118;&#x6b;&#x40;&#56;&#x78;&#x78;&#x38;&#x2e;&#114;&#117;</a>
 Date:   Wed Dec 13 23:09:53 2017 +0700</p>
 
 <pre><code>Texts added

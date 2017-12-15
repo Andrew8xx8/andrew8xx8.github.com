@@ -4,7 +4,7 @@
   <title><![CDATA[8xx8 (Андрей Кулаков)]]></title>
   <link href="http://8xx8.ru/atom.xml" rel="self"/>
   <link href="http://8xx8.ru/"/>
-  <updated>2017-12-15T17:33:28+07:00</updated>
+  <updated>2017-12-15T17:44:03+07:00</updated>
   <id>http://8xx8.ru/</id>
   <author>
     <name><![CDATA[Andrey Kulakov (8xx8)]]></name>
@@ -15,9 +15,9 @@
   
   <entry>
     <title type="html"><![CDATA[Как потратить свои изменения в Git]]></title>
-    <link href="http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git/"/>
-    <updated>2016-10-06T14:26:29+07:00</updated>
-    <id>http://8xx8.ru/blog/2016/10/06/how-to-waste-your-changes-in-git</id>
+    <link href="http://8xx8.ru/blog/2017/12/15/how-to-waste-your-changes-in-git/"/>
+    <updated>2017-12-15T14:26:29+07:00</updated>
+    <id>http://8xx8.ru/blog/2017/12/15/how-to-waste-your-changes-in-git</id>
     <content type="html"><![CDATA[<p><strong>TL;DR</strong> При изменении коммита не откатывайте изменения в файле полностью, если этот коммит уже мержился в другую ветку.</p>
 
 <p>Иначе, если вы полностью отмените сделанные в файле изменения, то он пропадет из дифа этого коммита, и при повторном мерже с ним ничего не произойдет.  Все будет так, как и было в целевой  ветке до мержа. <code>git merge</code> будет говорить Already up-to-date, но содержимое файлов будет разным в этих ветках.</p>
